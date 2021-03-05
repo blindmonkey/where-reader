@@ -11,7 +11,7 @@ export class LabeledReader<T> extends AbstractReader<T> {
     this.label = label;
   }
   read(str: string, index: number): ReadToken<T> | null {
-    // console.info('Reading:', this.label);
+    // console.info('Reading:', this.label, str.slice(index));
     return this.delegate.read(str, index);
   }
 }

@@ -102,27 +102,39 @@ const condition: Reader<EqualityCondition | InCondition> = identifier.then(equal
     }
   });
 
-const exprDel = new DelegatingReader<OrTokens>()
+const exprDel = new DelegatingReader<AndTokens | OrTokens | Condition>()
   .labeled('expression');
-const ands: Reader<AndTokens> = condition
+const ands: Reader<AndTokens | OrTokens | Condition> = condition
   .or(exprDel.between(openParen, closeParen))
-  .separatedBy(and)
+  .separatedBy(and.wrappedBy(whitespace))
   .labeled('ands')
-  .map(tokens => ({
-    type: 'ands',
-    tokens: tokens.map(t => t.value)
-  }));
-const ors: Reader<OrTokens> = ands
+  .map(tokens => {
+    if (tokens.length === 1) {
+      return tokens[0].value;
+    }
+    return {
+      type: 'ands',
+      tokens: tokens.map(t => t.value)
+    } as AndTokens;
+  });
+const ors: Reader<OrTokens | AndTokens | Condition> = ands
   .or(exprDel.between(openParen, closeParen))
-  .separatedBy(or)
+  .separatedBy(or.wrappedBy(whitespace))
   .labeled('ors')
-  .map(tokens => ({
-    type: 'ors',
-    tokens: tokens.map(t => t.value)
-  }));
+  .map(tokens => {
+    if (tokens.length === 1) {
+      return tokens[0].value;
+    }
+    return {
+      type: 'ors',
+      tokens: tokens.map(t => t.value)
+    } as OrTokens;
+  });
 
 exprDel.delegate = ors;
 const expr = exprDel.then(Read.eof())
-  .map(t => t[0]);
+  .map(t => t[0].value);
 
 console.log(JSON.stringify(expr.read('x = 5', 0)));
+console.log(JSON.stringify(expr.read('z in (1, 2, 3)', 0)));
+console.log(JSON.stringify(expr.read('x = 5 and y = 3 or z in (1, 2, 3)', 0)));
