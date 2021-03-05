@@ -1,7 +1,6 @@
 import { Reader } from "./Reader";
 import { ReadToken } from "./ReadToken";
 
-
 export abstract class AbstractReader<T> implements Reader<T> {
   abstract read(str: string, index: number): ReadToken<T>|null;
   or<Other>(other: Reader<Other>): EitherReader<T, Other> {
