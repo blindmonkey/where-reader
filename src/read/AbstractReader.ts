@@ -1,14 +1,14 @@
-import { EitherReader } from "./EitherReader";
-import { FailReader } from "./FailReader";
-import { LabeledReader } from "./LabeledReader";
-import { TransformReader } from "./MapReader";
-import { MiddleReader } from "./MiddleReader";
+import { EitherReader } from "./readers/EitherReader";
+import { FailReader } from "./readers/FailReader";
+import { LabeledReader } from "./readers/LabeledReader";
+import { TransformReader } from "./readers/MapReader";
+import { MiddleReader } from "./readers/MiddleReader";
 import { Reader } from "./Reader";
 import { ReadToken } from "./ReadToken";
-import { RepeatReader } from "./RepeatReader";
-import { SeparatedReader } from "./SeparatedReader";
-import { Tuple2Reader } from "./Tuple2Reader";
-import { WrappedReader } from "./WrappedReader";
+import { RepeatReader } from "./readers/RepeatReader";
+import { SeparatedReader } from "./readers/SeparatedReader";
+import { Tuple2Reader } from "./readers/Tuple2Reader";
+import { WrappedReader } from "./readers/WrappedReader";
 
 export abstract class AbstractReader<T> implements Reader<T> {
   abstract read(str: string, index: number): ReadToken<T>|null;

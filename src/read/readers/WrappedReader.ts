@@ -1,6 +1,6 @@
-import { AbstractReader } from "./AbstractReader";
-import { Reader } from "./Reader";
-import { ReadToken } from "./ReadToken";
+import { AbstractReader } from "../AbstractReader";
+import { Reader } from "../Reader";
+import { ReadToken } from "../ReadToken";
 import { Tuple2Reader } from "./Tuple2Reader";
 
 export class WrappedReader<T, Wrapper> extends AbstractReader<T> {

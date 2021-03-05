@@ -1,6 +1,6 @@
-import { AbstractReader } from "./AbstractReader";
-import { Reader } from "./Reader";
-import { ReadToken } from "./ReadToken";
+import { AbstractReader } from "../AbstractReader";
+import { Reader } from "../Reader";
+import { ReadToken } from "../ReadToken";
 
 export class EitherReader<Left, Right> extends AbstractReader<Left|Right> {
   leftReader: Reader<Left>;

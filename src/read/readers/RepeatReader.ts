@@ -1,6 +1,6 @@
-import { AbstractReader } from "./AbstractReader";
-import { Reader } from "./Reader";
-import { ReadToken } from "./ReadToken";
+import { AbstractReader } from "../AbstractReader";
+import { Reader } from "../Reader";
+import { ReadToken } from "../ReadToken";
 
 export class RepeatReader<T> extends AbstractReader<ReadToken<T>[]> {
   reader: Reader<T>;
