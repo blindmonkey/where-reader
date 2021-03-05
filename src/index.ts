@@ -81,27 +81,24 @@ const equalityOperator: Reader<Operator> =
   .labeled('equality-op');
 
 // TODO: Support literal/literal conditions and complex expressions
-const condition: Reader<EqualityCondition | InCondition> = identifier.then(equalityOperator.wrappedBy(whitespace).then(literal))
-  .or(identifier.then(Read.literal('in').wrappedBy(whitespace).then(literalList)))
-  .labeled('condition')
-  .map(tokens => {
-    const lhs = tokens[0].value;
-    const rhs = tokens[1].value[1].value;
-    if (tokens[1].value[0].value === 'in') {
-      return {
-        type: 'in-condition',
-        lhs: lhs,
-        rhs: rhs
-      } as InCondition;
-    } else {
-      return {
-        type: 'eq-condition',
-        operator: tokens[1].value[0].value,
-        lhs: lhs,
-        rhs: rhs
-      } as EqualityCondition;
-    }
-  });
+const eqCondition: Reader<EqualityCondition> =
+  identifier.then(equalityOperator.wrappedBy(whitespace).then(literal))
+    .map(tokens => ({
+      type: 'eq-condition',
+      operator: tokens[1].value[0].value,
+      lhs: tokens[0].value,
+      rhs: tokens[1].value[1].value
+    }));
+const inCondition: Reader<InCondition> =
+  identifier.then(Read.literal('in').wrappedBy(whitespace).then(literalList))
+    .map(tokens => ({
+      type: 'in-condition',
+      lhs: tokens[0].value,
+      rhs: tokens[1].value[1].value
+    }));
+const condition: Reader<EqualityCondition | InCondition> =
+  eqCondition.or(inCondition)
+  .labeled('condition');
 
 const exprDel = new DelegatingReader<AndTokens | OrTokens | Condition>()
   .labeled('expression');
