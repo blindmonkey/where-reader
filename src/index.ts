@@ -30,10 +30,10 @@ interface InCondition extends IToken<'in-condition'> {
 }
 type Condition = EqualityCondition | InCondition;
 interface OrTokens extends IToken<'ors'> {
-  tokens: (AndTokens | OrTokens)[];
+  tokens: (AndTokens | OrTokens | Condition)[];
 }
 interface AndTokens extends IToken<'ands'> {
-  tokens: (Condition | OrTokens)[];
+  tokens: (Condition | OrTokens | AndTokens)[];
 }
 
 // type Token = WhitespaceToken | Literal | LiteralList | EqualityCondition | ;
@@ -96,6 +96,7 @@ const condition: Reader<EqualityCondition | InCondition> = identifier.then(equal
     } else {
       return {
         type: 'eq-condition',
+        operator: tokens[1].value[0].value,
         lhs: lhs,
         rhs: rhs
       } as EqualityCondition;
@@ -115,7 +116,7 @@ const ands: Reader<AndTokens | OrTokens | Condition> = condition
     return {
       type: 'ands',
       tokens: tokens.map(t => t.value)
-    } as AndTokens;
+    };
   });
 const ors: Reader<OrTokens | AndTokens | Condition> = ands
   .or(exprDel.between(openParen, closeParen))
@@ -128,7 +129,7 @@ const ors: Reader<OrTokens | AndTokens | Condition> = ands
     return {
       type: 'ors',
       tokens: tokens.map(t => t.value)
-    } as OrTokens;
+    };
   });
 
 exprDel.delegate = ors;
