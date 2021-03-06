@@ -5,11 +5,11 @@ import { SeqReader } from "./SeqReader";
 
 export class LiteralReader<T extends string> extends AbstractReader<T> {
   reader: SeqReader<string>;
-  constructor(expected: string) {
+  constructor(expected: string, caseSensitive: boolean = true) {
     super();
     const readers: CharReader<any>[] = [];
     for (let i = 0; i < expected.length; i++) {
-      readers.push(new CharReader(expected[i]));
+      readers.push(new CharReader(expected[i], caseSensitive));
     }
     this.reader = new SeqReader(readers);
   }

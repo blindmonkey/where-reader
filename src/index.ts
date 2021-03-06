@@ -40,15 +40,16 @@ interface AndTokens extends IToken<'ands'> {
 
 const openParen = Read.char('(').labeled('open-paren');
 const closeParen = Read.char(')').labeled('close-paren');
-const and = Read.literal('and').labeled('and-literal');
-const or = Read.literal('or').labeled('or-literal');
+const and = Read.literal('and', false).labeled('and-literal');
+const or = Read.literal('or', false).labeled('or-literal');
 const comma = Read.literal(',').labeled('comma');
 const whitespaceChar =
   Read.char(' ')
     .or(Read.char('\t'))
     .or(Read.char('\n'))
     .labeled('whitespace-char');
-const whitespace: Reader<WhitespaceToken> = whitespaceChar.repeated().labeled('whitespace')
+const whitespace: Reader<WhitespaceToken> =
+  whitespaceChar.repeated().labeled('whitespace')
   .map(chars => ({type: 'whitespace', content: chars.map(c => c.value).join('')}));
 // The first character of an identifier must be a letter or underscore
 const identifierFirstChar = Read.regexChar(/[a-zA-Z_]/);
@@ -90,7 +91,7 @@ const eqCondition: Reader<EqualityCondition> =
       rhs: tokens[1].value[1].value
     }));
 const inCondition: Reader<InCondition> =
-  identifier.then(Read.literal('in').wrappedBy(whitespace).then(literalList))
+  identifier.then(Read.literal('in', false).wrappedBy(whitespace).then(literalList))
     .map(tokens => ({
       type: 'in-condition',
       lhs: tokens[0].value,
@@ -130,7 +131,7 @@ const ors: Reader<OrTokens | AndTokens | Condition> = ands
   });
 
 exprDel.delegate = ors;
-const expr = exprDel.then(Read.eof())
+export const expr = exprDel.then(Read.eof())
   .map(t => t[0].value);
 
 console.log(JSON.stringify(expr.read('x = 5', 0)));

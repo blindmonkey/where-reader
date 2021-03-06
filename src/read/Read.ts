@@ -4,11 +4,11 @@ import { LiteralReader } from "./readers/LiteralReader";
 import { RegexCharReader } from "./readers/RegexCharReader";
 
 export class Read {
-  static char<T extends string>(expected: T): CharReader<T> {
-    return new CharReader(expected);
+  static char<T extends string>(expected: T, caseSensitive: boolean = true): CharReader<T> {
+    return new CharReader(expected, caseSensitive);
   }
-  static literal<T extends string>(literal: T): LiteralReader<T> {
-    return new LiteralReader(literal);
+  static literal<T extends string>(literal: T, caseSensitive: boolean = true): LiteralReader<T> {
+    return new LiteralReader(literal, caseSensitive);
   }
   static regexChar(regex: RegExp): RegexCharReader {
     return new RegexCharReader(regex);
