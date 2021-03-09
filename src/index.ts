@@ -16,16 +16,19 @@ interface NumberLiteral extends IToken<'number'> {
 }
 type Operator = '=' | '<=' | '>=' | '<' | '>' | 'in' | 'and' | 'or';
 type Literal = NumberLiteral | IdentifierToken;
+type Expr = Literal | List | ParenExpression | OperatorTokens;
 interface List extends IToken<'list'> {
-  // TODO: These should probably be List | Literal | OperatorTokens
-  tokens: Literal[];
+  tokens: Expr[];
 }
 interface RHSOperand {
   operator: Operator;
-  token: List | Literal | OperatorTokens;
+  token: Expr;
 }
 interface OperatorTokens extends IToken<'operator'> {
-  tokens: [List | Literal | OperatorTokens, ...RHSOperand[]]
+  tokens: [Expr, ...RHSOperand[]]
+}
+interface ParenExpression extends IToken<'parens'> {
+  expr: Expr;
 }
 
 const openParen = Read.char('(').labeled('open-paren');
@@ -57,7 +60,11 @@ const number: Reader<NumberLiteral> =
   .map(value => ({type: 'number', value: value}));
 
 const literal: Reader<Literal> = identifier.or(number).labeled('literal');
-const list: Reader<List> = literal
+
+const exprDel = new DelegatingReader<Expr>()
+  .labeled('expression');
+
+const list: Reader<List> = exprDel
   .separatedBy(comma.wrappedBy(whitespace))
   .between(openParen, closeParen)
   .labeled('list')
@@ -76,26 +83,24 @@ const operator: Reader<Operator> =
   .or(or.lookahead(terminator))
   .labeled('operator');
 
-// TODO: It's likely worth simplifying the type here. Instead of `OperatorTokens`,
-// it should likely be `Literal | List | OperatorTokens`.
-const exprDel = new DelegatingReader<OperatorTokens>()
-  .labeled('expression');
+const parenExpr: Reader<ParenExpression> = exprDel.between(openParen, closeParen)
+  .map(tokens => ({
+    type: 'parens',
+    expr: tokens
+  }));
 
 exprDel.delegate =
-  literal.or(list).or(exprDel.between(openParen, closeParen)).labeled('operator-lhs')
+  literal.or(parenExpr).or(list).labeled('operator-lhs')
     .then(operator.wrappedBy(whitespace).then(exprDel).labeled('operator-rhs').optional())
     .labeled('operator-list')
   .map(tokens => {
     const rest = tokens[1].value;
     if (rest == null) {
-      return {
-        type: 'operator',
-        tokens: [tokens[0].value]
-      }
-    } else {
+      return tokens[0].value;
+    } else if (rest[1].value.type === 'operator') {
       // Slice doesn't operator properly on tuples, so a cast is necessary here.
       const restRest = rest[1].value.tokens.slice(1) as RHSOperand[];
-      const outTokens: [Literal | List | OperatorTokens, ...RHSOperand[]] = [
+      const outTokens: [Expr, ...RHSOperand[]] = [
         tokens[0].value, {
         operator: rest[0].value,
         token: rest[1].value.tokens[0]
@@ -103,12 +108,29 @@ exprDel.delegate =
       return {
         type: 'operator',
         tokens: outTokens.concat(restRest)
-      } as OperatorTokens
+      // Cast is necessary because concat doesn't handle tuple types correctly.
+      } as OperatorTokens;
+    } else {
+      return {
+        type: 'operator',
+        tokens: [
+          tokens[0].value,
+          {operator: rest[0].value, token: rest[1].value}
+        ]
+      };
     }
   });
 export const expr = exprDel.then(Read.eof())
   .map(t => t[0].value);
 
+debugger;
+// console.log('hiii');
+console.log(JSON.stringify(expr.read('yyz', 0)));
+// console.log('hiii 5000');
+// console.log(JSON.stringify(expr.read('5000', 0)));
+// console.log('hiii 1');
+// console.log(JSON.stringify(expr.read('1', 0)));
 console.log(JSON.stringify(expr.read('x = 5', 0)));
 console.log(JSON.stringify(expr.read('z in (1, 2, 3)', 0)));
 console.log(JSON.stringify(expr.read('x = 5 and y = 3 or z in (1, 2, 3)', 0)));
+console.log(JSON.stringify(expr.read('x <= 5 and (y >= 3 and y < 5) or z in (1, 2, 3)', 0)));
