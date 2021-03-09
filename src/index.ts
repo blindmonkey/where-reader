@@ -120,17 +120,11 @@ exprDel.delegate =
       };
     }
   });
-export const expr = exprDel.then(Read.eof())
+export const expr = exprDel.wrappedBy(whitespace).then(Read.eof())
   .map(t => t[0].value);
 
-debugger;
-// console.log('hiii');
 console.log(JSON.stringify(expr.read('yyz', 0)));
-// console.log('hiii 5000');
-// console.log(JSON.stringify(expr.read('5000', 0)));
-// console.log('hiii 1');
-// console.log(JSON.stringify(expr.read('1', 0)));
-console.log(JSON.stringify(expr.read('x = 5', 0)));
+console.log(JSON.stringify(expr.read('    x = 5', 0)));
 console.log(JSON.stringify(expr.read('z in (1, 2, 3)', 0)));
 console.log(JSON.stringify(expr.read('x = 5 and y = 3 or z in (1, 2, 3)', 0)));
 console.log(JSON.stringify(expr.read('x <= 5 and (y >= 3 and y < 5) or z in (1, 2, 3)', 0)));
