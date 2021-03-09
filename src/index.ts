@@ -25,8 +25,7 @@ interface RHSOperand {
   token: List | Literal | OperatorTokens;
 }
 interface OperatorTokens extends IToken<'operator'> {
-  lhs: List | Literal | OperatorTokens;
-  rest: RHSOperand[];
+  tokens: [List | Literal | OperatorTokens, ...RHSOperand[]]
 }
 
 const openParen = Read.char('(').labeled('open-paren');
@@ -91,18 +90,20 @@ exprDel.delegate =
     if (rest == null) {
       return {
         type: 'operator',
-        lhs: tokens[0].value,
-        rest: []
+        tokens: [tokens[0].value]
       }
     } else {
+      // Slice doesn't operator properly on tuples, so a cast is necessary here.
+      const restRest = rest[1].value.tokens.slice(1) as RHSOperand[];
+      const outTokens: [Literal | List | OperatorTokens, ...RHSOperand[]] = [
+        tokens[0].value, {
+        operator: rest[0].value,
+        token: rest[1].value.tokens[0]
+      }];
       return {
         type: 'operator',
-        lhs: tokens[0].value,
-        rest: [{
-          operator: rest[0].value,
-          token: rest[1].value.lhs
-        }].concat(rest[1].value.rest)
-      }
+        tokens: outTokens.concat(restRest)
+      } as OperatorTokens
     }
   });
 export const expr = exprDel.then(Read.eof())

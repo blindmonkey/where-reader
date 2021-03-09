@@ -26,19 +26,18 @@ describe('expression', function() {
   it('single condition', function() {
     expect(expr.read('x = 5', 0)?.value).to.deep.equal({
       type: 'operator',
-      lhs: identifier('x'),
-      rest: [{
-        operator: '=',
-        token: number('5')
-      }]
+      tokens: [
+        identifier('x'),
+        operator('=', number('5'))
+      ]
     });
   });
 
   it('complex expression', function() {
     expect(expr.read('x <= 5 and y >= 3 or z in (1, 2, 3)', 0)?.value).to.deep.equal({
       type: 'operator',
-      lhs: identifier('x'),
-      rest: [
+      tokens: [
+        identifier('x'),
         operator('<=', number('5')),
         operator('and', identifier('y')),
         operator('>=', number('3')),
