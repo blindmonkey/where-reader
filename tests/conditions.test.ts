@@ -53,4 +53,32 @@ describe('expression', function() {
       ]
     });
   });
+
+  it('complex subexpression', function() {
+    expect(expr.read('x <= 5 and (y >= 3 and y < 5) or z in (1, 2, 3)', 0)?.value).to.deep.equal({
+      type: 'operator',
+      tokens: [
+        identifier('x'),
+        operator('<=', number('5')),
+        operator('and', {
+          type: 'operator',
+          tokens: [
+            identifier('y'),
+            operator('>=', number('3')),
+            operator('and', identifier('y')),
+            operator('<', number('5'))
+          ]
+        }),
+        operator('or', identifier('z')),
+        operator('in', {
+          type: 'list',
+          tokens: [
+            number('1'),
+            number('2'),
+            number('3')
+          ]
+        })
+      ]
+    });
+  });
 });
