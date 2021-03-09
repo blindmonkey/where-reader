@@ -14,29 +14,20 @@ interface IdentifierToken extends IToken<'identifier'> {
 interface NumberLiteral extends IToken<'number'> {
   value: string;
 }
-type Operator = '=' | '<=' | '>=' | '<' | '>';
+type Operator = '=' | '<=' | '>=' | '<' | '>' | 'in' | 'and' | 'or';
 type Literal = NumberLiteral | IdentifierToken;
-interface LiteralList extends IToken<'literal-list'> {
-  literals: Literal[];
+interface List extends IToken<'list'> {
+  // TODO: These should probably be List | Literal | OperatorTokens
+  tokens: Literal[];
 }
-interface EqualityCondition extends IToken<'eq-condition'> {
+interface RHSOperand {
   operator: Operator;
-  lhs: IdentifierToken;
-  rhs: Literal;
+  token: List | Literal | OperatorTokens;
 }
-interface InCondition extends IToken<'in-condition'> {
-  lhs: IdentifierToken;
-  rhs: LiteralList;
+interface OperatorTokens extends IToken<'operator'> {
+  lhs: List | Literal | OperatorTokens;
+  rest: RHSOperand[];
 }
-type Condition = EqualityCondition | InCondition;
-interface OrTokens extends IToken<'ors'> {
-  tokens: (AndTokens | OrTokens | Condition)[];
-}
-interface AndTokens extends IToken<'ands'> {
-  tokens: (Condition | OrTokens | AndTokens)[];
-}
-
-// type Token = WhitespaceToken | Literal | LiteralList | EqualityCondition | ;
 
 const openParen = Read.char('(').labeled('open-paren');
 const closeParen = Read.char(')').labeled('close-paren');
@@ -59,78 +50,61 @@ const identifier: Reader<IdentifierToken> =
   .map((tokens) => tokens[0].value + tokens[1].value.map(t => t.value).join(''))
   .labeled('identifier')
   .map(id => ({type: 'identifier', identifier: id}));
+const digit = Read.regexChar(/\d/);
 const number: Reader<NumberLiteral> =
-  Read.regexChar(/\d/).repeated()
-  .map((tokens) => tokens.map((token) => token.value).join(''))
+  digit.then(digit.repeated())
+  .map(tokens => tokens[0].value + tokens[1].value.map(token => token.value).join(''))
   .labeled('number')
   .map(value => ({type: 'number', value: value}));
 
 const literal: Reader<Literal> = identifier.or(number).labeled('literal');
-const literalList: Reader<LiteralList> = literal
+const list: Reader<List> = literal
   .separatedBy(comma.wrappedBy(whitespace))
   .between(openParen, closeParen)
-  .labeled('literal-list')
+  .labeled('list')
   // TODO: Preserve position information of the tokens
-  .map(tokens => ({type: 'literal-list', literals: tokens.map(t => t.value)}));
+  .map(tokens => ({type: 'list', tokens: tokens.map(t => t.value)}));
 
-const equalityOperator: Reader<Operator> =
+const terminator = Read.regexChar(/[^a-zA-Z_0-9]/);
+const operator: Reader<Operator> =
   Read.literal('=')
   .or(Read.literal('<='))
   .or(Read.literal('>='))
   .or(Read.literal('<'))
   .or(Read.literal('>'))
-  .labeled('equality-op');
+  .or(Read.literal('in', false).lookahead(terminator))
+  .or(and.lookahead(terminator))
+  .or(or.lookahead(terminator))
+  .labeled('operator');
 
-// TODO: Support literal/literal conditions and complex expressions
-const eqCondition: Reader<EqualityCondition> =
-  identifier.then(equalityOperator.wrappedBy(whitespace).then(literal))
-    .map(tokens => ({
-      type: 'eq-condition',
-      operator: tokens[1].value[0].value,
-      lhs: tokens[0].value,
-      rhs: tokens[1].value[1].value
-    }));
-const inCondition: Reader<InCondition> =
-  identifier.then(Read.literal('in', false).wrappedBy(whitespace).then(literalList))
-    .map(tokens => ({
-      type: 'in-condition',
-      lhs: tokens[0].value,
-      rhs: tokens[1].value[1].value
-    }));
-const condition: Reader<EqualityCondition | InCondition> =
-  eqCondition.or(inCondition)
-  .labeled('condition');
-
-const exprDel = new DelegatingReader<AndTokens | OrTokens | Condition>()
+// TODO: It's likely worth simplifying the type here. Instead of `OperatorTokens`,
+// it should likely be `Literal | List | OperatorTokens`.
+const exprDel = new DelegatingReader<OperatorTokens>()
   .labeled('expression');
-const ands: Reader<AndTokens | OrTokens | Condition> = condition
-  .or(exprDel.between(openParen, closeParen))
-  .separatedBy(and.wrappedBy(whitespace))
-  .labeled('ands')
-  .map(tokens => {
-    if (tokens.length === 1) {
-      return tokens[0].value;
-    }
-    return {
-      type: 'ands',
-      tokens: tokens.map(t => t.value)
-    };
-  });
-const ors: Reader<OrTokens | AndTokens | Condition> = ands
-  .or(exprDel.between(openParen, closeParen))
-  .separatedBy(or.wrappedBy(whitespace))
-  .labeled('ors')
-  .map(tokens => {
-    if (tokens.length === 1) {
-      return tokens[0].value;
-    }
-    return {
-      type: 'ors',
-      tokens: tokens.map(t => t.value)
-    };
-  });
 
-exprDel.delegate = ors;
+exprDel.delegate =
+  literal.or(list).or(exprDel.between(openParen, closeParen)).labeled('operator-lhs')
+    .then(operator.wrappedBy(whitespace).then(exprDel).labeled('operator-rhs').optional())
+    .labeled('operator-list')
+  .map(tokens => {
+    const rest = tokens[1].value;
+    if (rest == null) {
+      return {
+        type: 'operator',
+        lhs: tokens[0].value,
+        rest: []
+      }
+    } else {
+      return {
+        type: 'operator',
+        lhs: tokens[0].value,
+        rest: [{
+          operator: rest[0].value,
+          token: rest[1].value.lhs
+        }].concat(rest[1].value.rest)
+      }
+    }
+  });
 export const expr = exprDel.then(Read.eof())
   .map(t => t[0].value);
 

@@ -15,50 +15,42 @@ function number(n: string) {
     value: n
   };
 }
+function operator<T>(op: string, token: T) {
+  return {
+    operator: op,
+    token: token
+  }
+}
 
 describe('expression', function() {
   it('single condition', function() {
     expect(expr.read('x = 5', 0)?.value).to.deep.equal({
-      type: 'eq-condition',
-      operator: '=',
+      type: 'operator',
       lhs: identifier('x'),
-      rhs: number('5')
+      rest: [{
+        operator: '=',
+        token: number('5')
+      }]
     });
   });
 
   it('complex expression', function() {
     expect(expr.read('x <= 5 and y >= 3 or z in (1, 2, 3)', 0)?.value).to.deep.equal({
-      type: 'ors',
-      tokens: [
-        {
-          type: 'ands',
+      type: 'operator',
+      lhs: identifier('x'),
+      rest: [
+        operator('<=', number('5')),
+        operator('and', identifier('y')),
+        operator('>=', number('3')),
+        operator('or', identifier('z')),
+        operator('in', {
+          type: 'list',
           tokens: [
-            {
-              type: 'eq-condition',
-              operator: '<=',
-              lhs: identifier('x'),
-              rhs: number('5')
-            },
-            {
-              type: 'eq-condition',
-              operator: '>=',
-              lhs: identifier('y'),
-              rhs: number('3')
-            }
+            number('1'),
+            number('2'),
+            number('3')
           ]
-        },
-        {
-          type: 'in-condition',
-          lhs: identifier('z'),
-          rhs: {
-            type: 'literal-list',
-            literals: [
-              number('1'),
-              number('2'),
-              number('3')
-            ]
-          }
-        }
+        })
       ]
     });
   });
