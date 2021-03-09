@@ -30,6 +30,12 @@ export abstract class AbstractReader<T> implements Reader<T> {
   failWhen(condition: (value: T) => boolean): FailReader<T> {
     return new FailReader(this, condition);
   }
+  lookahead<Ahead>(ahead: Reader<Ahead>): LookaheadReader<T, Ahead> {
+    return new LookaheadReader(this, ahead);
+  }
+  optional(): OptionalReader<T> {
+    return new OptionalReader(this);
+  }
 }
 
 // These imports must come at the end, otherwise, AbstractReader is undefined
@@ -43,3 +49,5 @@ import { RepeatReader } from "./readers/RepeatReader";
 import { SeparatedReader } from "./readers/SeparatedReader";
 import { Tuple2Reader } from "./readers/Tuple2Reader";
 import { WrappedReader } from "./readers/WrappedReader";
+import { LookaheadReader } from "./readers/LookaheadReader";import { OptionalReader } from "./readers/OptionalReader";
+

@@ -1,8 +1,10 @@
 import { EitherReader } from "./readers/EitherReader";
 import { FailReader } from "./readers/FailReader";
 import { LabeledReader } from "./readers/LabeledReader";
+import { LookaheadReader } from "./readers/LookaheadReader";
 import { TransformReader } from "./readers/MapReader";
 import { MiddleReader } from "./readers/MiddleReader";
+import { OptionalReader } from "./readers/OptionalReader";
 import { RepeatReader } from "./readers/RepeatReader";
 import { SeparatedReader } from "./readers/SeparatedReader";
 import { Tuple2Reader } from "./readers/Tuple2Reader";
@@ -20,4 +22,6 @@ export interface Reader<T> {
   wrappedBy<Wrapper>(wrapper: Reader<Wrapper>): WrappedReader<T, Wrapper>;
   labeled(label: string): LabeledReader<T>;
   failWhen(condition: (value: T) => boolean): FailReader<T>;
+  lookahead<Ahead>(ahead: Reader<Ahead>): LookaheadReader<T, Ahead>;
+  optional(): OptionalReader<T>;
 }
