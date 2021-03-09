@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha';
-import { expect, should } from 'chai';
+import { expect } from 'chai';
 
 import { expr } from '../src/index';
 
@@ -98,9 +98,8 @@ describe('expression', function() {
   });
 
   it('complex subexpression', function() {
-    expect(expr.read('x <= 5 and (y >= 3 and y < 5) or z in (1, 2, 3)', 0)?.value).to.deep.equal({
-      type: 'operator',
-      tokens: [
+    expect(expr.read('x <= 5 and (y >= 3 and y < 5) or z in (1, 2, 3)', 0)?.value)
+      .to.deep.equal(operator([
         identifier('x'),
         operand('<=', number('5')),
         operand('and', parens(operator([
@@ -118,7 +117,6 @@ describe('expression', function() {
             number('3')
           ]
         })
-      ]
-    });
+    ]));
   });
 });

@@ -1,7 +1,7 @@
 import { AbstractReader } from "../AbstractReader";
 import { ReadToken } from "../ReadToken";
 
-export class CharReader<T extends string> extends AbstractReader<string> {
+export class CharReader<T extends string> extends AbstractReader<T> {
   expected: T;
   caseSensitive: boolean;
   constructor(expected: T, caseSensitive: boolean = true) {
@@ -17,16 +17,15 @@ export class CharReader<T extends string> extends AbstractReader<string> {
     }
     return char.toLowerCase() === this.expected.toLowerCase();
   }
-  read(str: string, index: number): ReadToken<string>|null {
+  read(str: string, index: number): ReadToken<T>|null {
+    if (index >= str.length) return null;
     const char = str[index];
-    if (char != null && this.compare(char)) {
-      return {
-        value: this.expected,
-        position: index,
-        length: 1,
-        next: index + 1
-      };
-    }
-    return null;
+    if (!this.compare(char)) return null;
+    return {
+      value: this.expected,
+      position: index,
+      length: 1,
+      next: index + 1
+    };
   }
 }

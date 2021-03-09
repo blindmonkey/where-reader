@@ -17,7 +17,7 @@ export class LiteralReader<T extends string> extends AbstractReader<T> {
     const value = this.reader.read(str, index);
     if (value == null) return null;
     return {
-      value: value.value.map((token) => token.value).join('') as T,
+      value: value.value.map(token => token.value).join('') as T,
       position: value.position,
       length: value.length,
       next: value.next
