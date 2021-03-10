@@ -26,7 +26,7 @@ interface IdentifierToken extends IToken<'identifier'> {
 interface NumberLiteral extends IToken<'number'> {
   value: string;
 }
-type Operator = '=' | '<=' | '>=' | '<' | '>' | 'in' | 'and' | 'or';
+type Operator = '=' | '<=' | '>=' | '<' | '>' | 'in' | 'and' | 'or' | '+' | '-' | '*' | '/' | '^';
 type Literal = NumberLiteral | IdentifierToken;
 type Expr = Literal | List<Expr> | ParenExpression<Expr> | OperatorTokens;
 interface List<Expr> extends IToken<'list'> {
@@ -99,6 +99,11 @@ const operator: Reader<Operator> =
   .or(Read.literal('in', false).lookahead(terminator))
   .or(and.lookahead(terminator))
   .or(or.lookahead(terminator))
+  .or(Read.literal('+'))
+  .or(Read.literal('-'))
+  .or(Read.literal('*'))
+  .or(Read.literal('/'))
+  .or(Read.literal('^'))
   .labeled('operator');
 
 const parenExpr: Reader<ParenExpression<Expr>> = exprDel.between(openParen, closeParen)
@@ -199,7 +204,11 @@ export const expr = exprDel.wrappedBy(whitespace).lookahead(Read.eof())
     '<': {precedence: 3, associativity: 'left'},
     '>': {precedence: 3, associativity: 'left'},
     'in': {precedence: 3, associativity: 'left'},
-    // '^': {precedence: 8, associativity: 'right'}
+    '+': {precedence: 4, associativity: 'left'},
+    '-': {precedence: 4, associativity: 'left'},
+    '*': {precedence: 5, associativity: 'left'},
+    '/': {precedence: 5, associativity: 'left'},
+    '^': {precedence: 6, associativity: 'right'}
   }));
 
 console.log(JSON.stringify(expr.read('yyz', 0)));

@@ -1,5 +1,5 @@
 import { describe, it } from 'mocha';
-import { expect } from 'chai';
+import { expect, should } from 'chai';
 
 import { expr } from '../src/index';
 
@@ -83,6 +83,46 @@ describe('expression', function() {
           )
         )
         ));
+  });
+
+  it('mathematical precedence/associativity', function() {
+    const id = identifier;
+    expect(expr.read('a+b+c+d*e*f*g*h^i^j^k^l*m*n*o*p+q+r+s+t', 0)?.value)
+      .to.deep.equal(
+        binary('+',
+          binary('+',
+            binary('+',
+              binary('+',
+                binary('+',
+                  binary('+',
+                    binary('+', id('a'), id('b')),
+                    id('c')),
+                  binary('*',
+                    binary('*',
+                      binary('*',
+                        binary('*',
+                          binary('*',
+                            binary('*',
+                              binary('*',
+                                binary('*', id('d'), id('e')),
+                                id('f')),
+                              id('g')),
+                            binary('^',
+                              id('h'),
+                              binary('^',
+                                id('i'),
+                                binary('^',
+                                  id('j'),
+                                  binary('^', id('k'), id('l')))))),
+                          id('m')),
+                        id('n')),
+                      id('o')),
+                    id('p'))),
+                id('q')),
+              id('r')),
+            id('s')),
+          id('t'))
+      );
   });
 
   it('complex subexpression', function() {
