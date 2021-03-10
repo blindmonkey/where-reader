@@ -2,6 +2,18 @@ import { DelegatingReader } from "./read/readers/DelegatingReader";
 import { Read } from "./read/Read";
 import { Reader } from "./read/Reader";
 
+function prepend<First, Rest>(first: First, rest: Rest[]): [First, ...Rest[]] {
+  return [first as First | Rest].concat(rest) as [First, ...Rest[]];
+}
+function getRest<First, Rest>(a: [First, ...Rest[]]): Rest[] {
+  return a.slice(1) as Rest[];
+}
+function getLast<T>(a: T[]): T {
+  if (a.length === 0) throw 'Cannot get last of an empty array';
+  return a[a.length - 1];
+}
+
+
 interface IToken<Type extends string> {
   type: Type;
 }
@@ -16,8 +28,8 @@ interface NumberLiteral extends IToken<'number'> {
 }
 type Operator = '=' | '<=' | '>=' | '<' | '>' | 'in' | 'and' | 'or';
 type Literal = NumberLiteral | IdentifierToken;
-type Expr = Literal | List | ParenExpression | OperatorTokens;
-interface List extends IToken<'list'> {
+type Expr = Literal | List<Expr> | ParenExpression<Expr> | OperatorTokens;
+interface List<Expr> extends IToken<'list'> {
   tokens: Expr[];
 }
 interface RHSOperand {
@@ -27,9 +39,15 @@ interface RHSOperand {
 interface OperatorTokens extends IToken<'operator'> {
   tokens: [Expr, ...RHSOperand[]]
 }
-interface ParenExpression extends IToken<'parens'> {
+interface ParenExpression<Expr> extends IToken<'parens'> {
   expr: Expr;
 }
+interface Binary extends IToken<'binary'> {
+  operator: Operator;
+  lhs: BExpr;
+  rhs: BExpr;
+}
+type BExpr = Literal | List<BExpr> | Binary;
 
 const openParen = Read.char('(').labeled('open-paren');
 const closeParen = Read.char(')').labeled('close-paren');
@@ -64,7 +82,7 @@ const literal: Reader<Literal> = identifier.or(number).labeled('literal');
 const exprDel = new DelegatingReader<Expr>()
   .labeled('expression');
 
-const list: Reader<List> = exprDel
+const list: Reader<List<Expr>> = exprDel
   .separatedBy(comma.wrappedBy(whitespace))
   .between(openParen, closeParen)
   .labeled('list')
@@ -83,7 +101,7 @@ const operator: Reader<Operator> =
   .or(or.lookahead(terminator))
   .labeled('operator');
 
-const parenExpr: Reader<ParenExpression> = exprDel.between(openParen, closeParen)
+const parenExpr: Reader<ParenExpression<Expr>> = exprDel.between(openParen, closeParen)
   .map(tokens => ({
     type: 'parens',
     expr: tokens
@@ -98,18 +116,15 @@ exprDel.delegate =
     if (rest == null) {
       return tokens[0].value;
     } else if (rest[1].value.type === 'operator') {
-      // Slice doesn't operator properly on tuples, so a cast is necessary here.
-      const restRest = rest[1].value.tokens.slice(1) as RHSOperand[];
-      const outTokens: [Expr, ...RHSOperand[]] = [
-        tokens[0].value, {
-        operator: rest[0].value,
-        token: rest[1].value.tokens[0]
-      }];
-      return {
+      return <OperatorTokens>{
         type: 'operator',
-        tokens: outTokens.concat(restRest)
-      // Cast is necessary because concat doesn't handle tuple types correctly.
-      } as OperatorTokens;
+        tokens: prepend(
+          tokens[0].value,
+          [{
+            operator: rest[0].value,
+            token: rest[1].value.tokens[0]
+          }].concat(getRest(rest[1].value.tokens)))
+      };
     } else {
       return {
         type: 'operator',
@@ -120,8 +135,72 @@ exprDel.delegate =
       };
     }
   });
-export const expr = exprDel.wrappedBy(whitespace).then(Read.eof())
-  .map(t => t[0].value);
+
+function processPrecedence(e: Expr, precedence: {[k in Operator]: {precedence: number, associativity: 'left' | 'right'}}): BExpr {
+  switch (e.type) {
+    case 'identifier':
+    case 'number':
+      return e;
+    case 'list':
+      return {
+        type: 'list',
+        tokens: e.tokens.map(t => processPrecedence(t, precedence))
+      };
+    case 'operator':
+      const output: BExpr[] = [processPrecedence(e.tokens[0], precedence)];
+      const operators: Operator[] = [];
+
+      getRest(e.tokens).forEach(operand => {
+        const operator = operand.operator;
+        const token = processPrecedence(operand.token, precedence)
+        while (operators.length > 0) {
+          const lastOperator = getLast(operators);
+          if (precedence[lastOperator].precedence > precedence[operator].precedence
+              || (precedence[lastOperator].precedence === precedence[operator].precedence
+            && precedence[operator].associativity === 'left')) {
+            const rhs = output.pop()!;
+            const lhs = output.pop()!;
+            const operator = operators.pop()!;
+            output.push({
+              type: 'binary',
+              operator: operator,
+              lhs: lhs,
+              rhs: rhs
+            });
+          } else {
+            break;
+          }
+        }
+        output.push(token);
+        operators.push(operator);
+        // push it onto the operator stack.
+        // output = appendToken(output, operator, token);
+      });
+      while (operators.length > 0) {
+        const rhs = output.pop()!;
+        const lhs = output.pop()!;
+        const operator = operators.pop()!;
+        output.push({ type: 'binary', operator, lhs, rhs });
+      }
+      if (output.length !== 1) throw 'error';
+      return output[0];
+    case 'parens':
+      return processPrecedence(e.expr, precedence);
+  }
+}
+
+export const expr = exprDel.wrappedBy(whitespace).lookahead(Read.eof())
+  .map(e => processPrecedence(e, {
+    'or': {precedence: 1, associativity: 'left'},
+    'and': {precedence: 2, associativity: 'left'},
+    '=': {precedence: 3, associativity: 'left'},
+    '<=': {precedence: 3, associativity: 'left'},
+    '>=': {precedence: 3, associativity: 'left'},
+    '<': {precedence: 3, associativity: 'left'},
+    '>': {precedence: 3, associativity: 'left'},
+    'in': {precedence: 3, associativity: 'left'},
+    // '^': {precedence: 8, associativity: 'right'}
+  }));
 
 console.log(JSON.stringify(expr.read('yyz', 0)));
 console.log(JSON.stringify(expr.read('    x = 5', 0)));
