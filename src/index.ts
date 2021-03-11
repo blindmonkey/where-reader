@@ -1,6 +1,7 @@
 import { DelegatingReader } from "./read/readers/DelegatingReader";
 import { Read } from "./read/Read";
 import { Reader } from "./read/Reader";
+import { ReadToken } from "./read/ReadToken";
 
 function prepend<First, Rest>(first: First, rest: Rest[]): [First, ...Rest[]] {
   return [first as First | Rest].concat(rest) as [First, ...Rest[]];
@@ -28,7 +29,7 @@ interface NumberLiteral extends IToken<'number'> {
 }
 type Operator = '=' | '<=' | '>=' | '<' | '>' | 'in' | 'and' | 'or' | '+' | '-' | '*' | '/' | '^';
 type Literal = NumberLiteral | IdentifierToken;
-type Expr = Literal | List<Expr> | ParenExpression<Expr> | OperatorTokens;
+type Expr = Literal | List<Expr> | ParenExpression<Expr> | OperatorTokens | PropertyAccess<Expr> | SubscriptAccess<Expr>;
 interface List<Expr> extends IToken<'list'> {
   tokens: Expr[];
 }
@@ -42,15 +43,26 @@ interface OperatorTokens extends IToken<'operator'> {
 interface ParenExpression<Expr> extends IToken<'parens'> {
   expr: Expr;
 }
+interface PropertyAccess<Expr> extends IToken<'property'> {
+  expr: Expr;
+  identifier: IdentifierToken;
+}
+interface SubscriptAccess<Expr> extends IToken<'subscript'> {
+  value: Expr;
+  property: Expr;
+}
+
 interface Binary extends IToken<'binary'> {
   operator: Operator;
   lhs: BExpr;
   rhs: BExpr;
 }
-type BExpr = Literal | List<BExpr> | Binary;
+type BExpr = Literal | List<BExpr> | Binary | PropertyAccess<BExpr> | SubscriptAccess<BExpr>;
 
 const openParen = Read.char('(').labeled('open-paren');
 const closeParen = Read.char(')').labeled('close-paren');
+const openBracket = Read.char('[').labeled('open-bracket');
+const closeBracket = Read.char(']').labeled('close-bracket');
 const and = Read.literal('and', false).labeled('and-literal');
 const or = Read.literal('or', false).labeled('or-literal');
 const comma = Read.literal(',').labeled('comma');
@@ -112,8 +124,55 @@ const parenExpr: Reader<ParenExpression<Expr>> = exprDel.between(openParen, clos
     expr: tokens
   }));
 
+const exprLHS: Reader<Literal | ParenExpression<Expr> | List<Expr> | PropertyAccess<Expr> | SubscriptAccess<Expr>> =
+  literal.or(parenExpr).or(list)
+  .then(
+    Read.char('.').wrappedBy(whitespace).then(identifier)
+    .map(tokens => (<{type: 'property', identifier: ReadToken<IdentifierToken>}>{
+      type: 'property',
+      identifier: tokens[1]
+    }))
+    .or(exprDel.between(openBracket, closeBracket)
+      .map(tokens => (<{type: 'subscript', subscript: Expr}>{
+        type: 'subscript',
+        subscript: tokens
+      })))
+    .repeated()
+  )
+  .map(tokens => {
+    if (tokens[1].value.length == 0) {
+      return tokens[0].value;
+    } else {
+      let root: Expr = tokens[0].value;
+      const rhs = tokens[1].value;
+      // 'a.b.c' => 'a' ['b', 'c']
+      // prop(prop('a', 'b'), 'c')
+      for (let i = 0; i < rhs.length; i++) {
+        // const token = rhs[rhs.length - 1 - i];
+        const token = rhs[i].value;
+        switch (token.type) {
+          case 'property':
+            root = <PropertyAccess<Expr>>{
+              type: 'property',
+              expr: root,
+              identifier: token.identifier.value
+            };
+            break;
+          case 'subscript':
+            root = <SubscriptAccess<Expr>>{
+              type: 'subscript',
+              value: root,
+              property: token.subscript
+            };
+            break;
+        }
+      }
+      return root;
+    }
+  })
+  .labeled('operator-lhs');
 exprDel.delegate =
-  literal.or(parenExpr).or(list).labeled('operator-lhs')
+  exprLHS
     .then(operator.wrappedBy(whitespace).then(exprDel).labeled('operator-rhs').optional())
     .labeled('operator-list')
   .map(tokens => {
@@ -146,6 +205,18 @@ function processPrecedence(e: Expr, precedence: {[k in Operator]: {precedence: n
     case 'identifier':
     case 'number':
       return e;
+    case 'property':
+      return {
+        type: 'property',
+        expr: processPrecedence(e.expr, precedence),
+        identifier: e.identifier
+      };
+    case 'subscript':
+      return {
+        type: 'subscript',
+        value: processPrecedence(e.value, precedence),
+        property: processPrecedence(e.property, precedence)
+      };
     case 'list':
       return {
         type: 'list',
@@ -211,6 +282,7 @@ export const expr = exprDel.wrappedBy(whitespace).lookahead(Read.eof())
     '^': {precedence: 6, associativity: 'right'}
   }));
 
+console.log(JSON.stringify(expr.read('a.b.c[1 + 2].d', 0)));
 console.log(JSON.stringify(expr.read('yyz', 0)));
 console.log(JSON.stringify(expr.read('    x = 5', 0)));
 console.log(JSON.stringify(expr.read('z in (1, 2, 3)', 0)));

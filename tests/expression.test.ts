@@ -24,6 +24,12 @@ function binary<Op extends string, LHS, RHS>(operator: Op, lhs: LHS, rhs: RHS) {
 function list(...tokens: any[]) {
   return { type: 'list', tokens };
 }
+function property<A, B>(expr: A, identifier: B) {
+  return { type: 'property', expr: expr, identifier: identifier };
+}
+function subscript<A, B>(value: A, property: B) {
+  return { type: 'subscript', value, property };
+}
 
 describe('expression', function() {
   it('identifier', function() {
@@ -65,16 +71,23 @@ describe('expression', function() {
   });
 
   it('complex expression', function() {
-    expect(expr.read('x <= 5 and y >= 3 or z in (1, 2, 3)', 0)?.value)
-      .to.deep.equal(binary(
-        'or',
-        binary(
-          'and',
-          binary('<=', identifier('x'), number('5')),
-          binary('>=', identifier('y'), number('3'))
+    expect(expr.read('x.y.z <= 5 and y[1][2].z >= 3 or z in (1, 2, 3)', 0)?.value)
+      .to.deep.equal(binary('or',
+        binary('and',
+          binary('<=',
+            property(
+              property(identifier('x'), identifier('y')),
+              identifier('z')),
+            number('5')),
+          binary('>=',
+            property(
+              subscript(
+                subscript(identifier('y'), number('1')),
+                number('2')),
+              identifier('z')),
+            number('3'))
         ),
-        binary(
-          'in',
+        binary('in',
           identifier('z'),
           list(
             number('1'),
