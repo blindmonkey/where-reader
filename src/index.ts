@@ -285,9 +285,6 @@ export const expr = exprDel.wrappedBy(whitespace).lookahead(Read.eof())
 function compile(expression: string): string {
   class CompilationContext {
     private id_: number = 0;
-    get lastId(): string {
-      return '_' + this.id_;
-    }
     get id(): string {
       const id = this.id_;
       this.id_++;
