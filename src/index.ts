@@ -282,6 +282,84 @@ export const expr = exprDel.wrappedBy(whitespace).lookahead(Read.eof())
     '^': {precedence: 6, associativity: 'right'}
   }));
 
+function compile(expression: string): string {
+  class CompilationContext {
+    private id_: number = 0;
+    get lastId(): string {
+      return '_' + this.id_;
+    }
+    get id(): string {
+      const id = this.id_;
+      this.id_++;
+      return '_' + id;
+    }
+  }
+  function compile(expr: BExpr, context: CompilationContext): {id: string, code: string} {
+    const id = context.id;
+    function result(expr: string, deps: string = '') {
+      return {
+        id: id,
+        code: `${deps}var ${id} = ${expr};\n`
+      };
+    }
+    switch (expr.type) {
+      case 'identifier':
+        return result(`context['${expr.identifier}']`);
+      case 'number':
+        return result(expr.value);
+      case 'property':
+        const e = compile(expr.expr, context);
+        return result(`${e.id}.${expr.identifier.identifier}`, e.code);
+      case 'subscript':
+        const value = compile(expr.value, context);
+        const property = compile(expr.property, context);
+        return result(`${value.id}[${property.id}]`, `${value.code}${property.code}`);
+      case 'list':
+        const tokens = expr.tokens.map(token => compile(token, context));
+        return result(`[${tokens.map(t => t.id).join(', ')}]`, tokens.map(t => t.code).join(''));
+      case 'binary':
+        const lhs = compile(expr.lhs, context);
+        const rhs = compile(expr.rhs, context);
+        function compileBinary(op: Operator, lhs: string, rhs: string): string {
+          switch (op) {
+            case '+':
+            case '-':
+            case '*':
+            case '/':
+            case '<=':
+            case '>=':
+            case '<':
+            case '>':
+              return `${lhs} ${op} ${rhs}`;
+            case '=':
+              return `${lhs} === ${rhs}`;
+            case '^':
+              return `Math.pow(${lhs}, ${rhs})`;
+            case 'and':
+              return `${lhs} && ${rhs}`;
+            case 'or':
+              return `${lhs} || ${rhs}`;
+            case 'in':
+            // default:
+              throw `Unsupported operator ${op}`;
+          }
+        }
+        return result(`(${compileBinary(expr.operator, lhs.id, rhs.id)})`, `${lhs.code}${rhs.code}`);
+      // default:
+      //   throw `unsupported ${expr.type}`;
+    }
+  }
+  const parsed = expr.read(expression, 0);
+  if (parsed == null) throw 'Parse error';
+  const compiled = compile(parsed.value, new CompilationContext());
+  return `
+function(context) {
+${compiled.code}
+return ${compiled.id};
+}`;
+}
+
+console.log(compile('a.b.c[1 + x].d and z = (1, 2, 3 + 4)'));
 console.log(JSON.stringify(expr.read('a.b.c[1 + 2].d', 0)));
 console.log(JSON.stringify(expr.read('yyz', 0)));
 console.log(JSON.stringify(expr.read('    x = 5', 0)));
