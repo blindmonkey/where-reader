@@ -2,10 +2,12 @@ import { AbstractReader } from "../AbstractReader";
 import { ReadToken } from "../ReadToken";
 
 export class CharReader<T extends string> extends AbstractReader<T> {
+  label: string;
   expected: T;
   caseSensitive: boolean;
   constructor(expected: T, caseSensitive: boolean = true) {
     super();
+    this.label = `'${expected}'`;
     if (expected.length !== 1)
       throw 'CharReader can only read one character at a time';
     this.expected = expected;

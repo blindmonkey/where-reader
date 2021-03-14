@@ -5,6 +5,9 @@ import { ReadToken } from "../ReadToken";
 export class TransformReader<Input, Output> extends AbstractReader<Output> {
   reader: Reader<Input>;
   transform: (input: Input) => Output;
+  get label(): string {
+    return this.reader.label;
+  }
   constructor(reader: Reader<Input>, transform: (input: Input) => Output) {
     super();
     this.reader = reader;

@@ -4,9 +4,11 @@ import { CharReader } from "./CharReader";
 import { SeqReader } from "./SeqReader";
 
 export class LiteralReader<T extends string> extends AbstractReader<T> {
+  label: string;
   reader: SeqReader<string>;
   constructor(expected: string, caseSensitive: boolean = true) {
     super();
+    this.label = `"${expected}"`
     const readers: CharReader<any>[] = [];
     for (let i = 0; i < expected.length; i++) {
       readers.push(new CharReader(expected[i], caseSensitive));

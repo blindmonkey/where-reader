@@ -6,6 +6,10 @@ import { Tuple2Reader } from "./Tuple2Reader";
 export class WrappedReader<T, Wrapper> extends AbstractReader<T> {
   reader: Reader<T>;
   wrapper: Reader<Wrapper>;
+  get label(): string {
+    const wlabel = this.wrapper.label;
+    return `${wlabel} ${this.reader.label} ${wlabel}`;
+  }
   constructor(reader: Reader<T>, wrapper: Reader<Wrapper>) {
     super();
     this.reader = reader;

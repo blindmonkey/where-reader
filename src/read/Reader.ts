@@ -12,6 +12,7 @@ import { WrappedReader } from "./readers/WrappedReader";
 import { ReadToken } from "./ReadToken";
 
 export interface Reader<T> {
+  label: string;
   read(str: string, index: number): ReadToken<T>|null;
   or<Other>(other: Reader<Other>): EitherReader<T, Other>;
   map<Output>(f: (input: T) => Output): TransformReader<T, Output>;

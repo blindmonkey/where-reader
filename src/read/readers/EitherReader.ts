@@ -5,6 +5,9 @@ import { ReadToken } from "../ReadToken";
 export class EitherReader<Left, Right> extends AbstractReader<Left|Right> {
   leftReader: Reader<Left>;
   rightReader: Reader<Right>;
+  get label(): string {
+    return `${this.leftReader.label} | ${this.rightReader.label}`;
+  }
   constructor(left: Reader<Left>, right: Reader<Right>) {
     super();
     this.leftReader = left;

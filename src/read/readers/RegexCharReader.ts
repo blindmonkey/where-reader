@@ -2,9 +2,11 @@ import { AbstractReader } from "../AbstractReader";
 import { ReadToken } from "../ReadToken";
 
 export class RegexCharReader extends AbstractReader<string> {
+  label: string;
   regex: RegExp;
   constructor(regex: RegExp) {
     super();
+    this.label = `${regex}`;
     this.regex = regex;
   }
   read(str: string, index: number): ReadToken<string>|null {

@@ -5,6 +5,9 @@ import { ReadToken } from "../ReadToken";
 export class FailReader<T> extends AbstractReader<T> {
   reader: Reader<T>;
   condition: (value: T) => boolean;
+  get label(): string {
+    return this.reader.label;
+  }
   constructor(reader: Reader<T>, condition: (value: T) => boolean) {
     super();
     this.reader = reader;

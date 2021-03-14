@@ -4,6 +4,9 @@ import { ReadToken } from "../ReadToken";
 
 export class SeqReader<T> extends AbstractReader<ReadToken<T>[]> {
   readers: Reader<T>[];
+  get label(): string {
+    return this.readers.map(r => r.label).join(' ');
+  }
   constructor(readers: Reader<T>[]) {
     super();
     this.readers = readers;

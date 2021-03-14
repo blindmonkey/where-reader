@@ -5,6 +5,9 @@ import { ReadToken } from "../ReadToken";
 export class Tuple2Reader<A, B> extends AbstractReader<[ReadToken<A>, ReadToken<B>]> {
   a: Reader<A>;
   b: Reader<B>;
+  get label(): string {
+    return `${this.a.label} ${this.b.label}`;
+  }
   constructor(a: Reader<A>, b: Reader<B>) {
     super();
     this.a = a;

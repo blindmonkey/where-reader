@@ -5,6 +5,9 @@ import { ReadToken } from "../ReadToken";
 export class SeparatedReader<T, Separator> extends AbstractReader<ReadToken<T>[]> {
   reader: Reader<T>;
   sep: Reader<Separator>;
+  get label(): string {
+    return `[${this.reader.label} separated by ${this.sep.label}]`;
+  }
   constructor(reader: Reader<T>, sep: Reader<Separator>) {
     super();
     this.reader = reader;

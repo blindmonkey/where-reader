@@ -4,6 +4,9 @@ import { ReadToken } from "../ReadToken";
 
 export class OptionalReader<T> extends AbstractReader<T | null> {
   reader: Reader<T>;
+  get label(): string {
+    return `[${this.reader.label}]`;
+  }
   constructor(reader: Reader<T>) {
     super();
     this.reader = reader;
