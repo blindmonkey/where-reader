@@ -119,8 +119,6 @@ describe('expression', function() {
           position: 2,
           expected: "'.' | '[' | operator",
           context: 'expression:0'
-        //   position: 2,
-        //   expected: "'.' | '[' | operator | <EOF>"
         }, {
           position: 2,
           expected: "<EOF>",
