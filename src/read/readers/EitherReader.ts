@@ -1,6 +1,6 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
-import { ReadToken } from "../ReadToken";
+import { ReadResult } from "../ReadResult";
 
 export class EitherReader<Left, Right> extends AbstractReader<Left|Right> {
   leftReader: Reader<Left>;
@@ -13,13 +13,14 @@ export class EitherReader<Left, Right> extends AbstractReader<Left|Right> {
     this.leftReader = left;
     this.rightReader = right;
   }
-  read(str: string, index: number): ReadToken<Left|Right> | null {
+  read(str: string, index: number): ReadResult<Left | Right> {
     const leftValue = this.leftReader.read(str, index);
-    if (leftValue != null)
-      return leftValue;
+    if (leftValue.type !== 'failure') return leftValue;
     const rightValue = this.rightReader.read(str, index);
-    if (rightValue != null)
-      return rightValue;
-    return null;
+    if (rightValue.type !== 'failure') return rightValue;
+    return {
+      type: 'failure',
+      errors: leftValue.errors.concat(rightValue.errors)
+    };
   }
 }

@@ -1,6 +1,6 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
-import { ReadToken } from "../ReadToken";
+import { ReadResult } from "../ReadResult";
 
 export class OptionalReader<T> extends AbstractReader<T | null> {
   reader: Reader<T>;
@@ -11,14 +11,16 @@ export class OptionalReader<T> extends AbstractReader<T | null> {
     super();
     this.reader = reader;
   }
-  read(str: string, index: number): ReadToken<T | null> {
+  read(str: string, index: number): ReadResult<T | null> {
     const value = this.reader.read(str, index);
-    if (value == null) {
+    if (value.type === 'failure') {
       return {
+        type: 'token',
         value: null,
         position: index,
         next: index,
-        length: 0
+        length: 0,
+        failures: value.errors
       };
     }
     return value;

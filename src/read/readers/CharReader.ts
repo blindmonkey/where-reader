@@ -1,5 +1,5 @@
 import { AbstractReader } from "../AbstractReader";
-import { ReadToken } from "../ReadToken";
+import { ReadFailure, ReadResult } from "../ReadResult";
 
 export class CharReader<T extends string> extends AbstractReader<T> {
   label: string;
@@ -19,11 +19,22 @@ export class CharReader<T extends string> extends AbstractReader<T> {
     }
     return char.toLowerCase() === this.expected.toLowerCase();
   }
-  read(str: string, index: number): ReadToken<T>|null {
-    if (index >= str.length) return null;
-    const char = str[index];
-    if (!this.compare(char)) return null;
+  private failure(index: number): ReadFailure {
     return {
+      type: 'failure',
+      errors: [{
+        position: index,
+        expected: this.label,
+        context: []
+      }]
+    };
+  }
+  read(str: string, index: number): ReadResult<T> {
+    if (index >= str.length) return this.failure(index);
+    const char = str[index];
+    if (!this.compare(char)) return this.failure(index);
+    return {
+      type: 'token',
       value: this.expected,
       position: index,
       length: 1,

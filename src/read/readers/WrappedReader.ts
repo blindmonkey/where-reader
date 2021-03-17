@@ -1,6 +1,6 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
-import { ReadToken } from "../ReadToken";
+import { ReadResult } from "../ReadResult";
 import { Tuple2Reader } from "./Tuple2Reader";
 
 export class WrappedReader<T, Wrapper> extends AbstractReader<T> {
@@ -15,22 +15,18 @@ export class WrappedReader<T, Wrapper> extends AbstractReader<T> {
     this.reader = reader;
     this.wrapper = wrapper;
   }
-  read(str: string, index: number): ReadToken<T> | null {
-    const reader = new Tuple2Reader(
-      this.wrapper,
-      new Tuple2Reader(
-        this.reader,
-        this.wrapper
-      )
-    );
-    const value = reader.read(str, index);
-    if (value == null) return null;
-    const token = value.value[1].value[0]
+  read(str: string, index: number): ReadResult<T> {
+    const reader = this.wrapper.then(this.reader.then(this.wrapper));
+    const result = reader.read(str, index);
+    if (result.type === 'failure') return result;
+    const token = result.value[1].value[0]
     return {
+      type: 'token',
       value: token.value,
       position: token.position,
       length: token.length,
-      next: value.next
+      next: result.next,
+      failures: result.failures
     };
   }
 }

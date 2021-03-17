@@ -1,6 +1,6 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
-import { ReadToken } from "../ReadToken";
+import { ReadResult, ReadToken } from "../ReadResult";
 
 export class LookaheadReader<T, Ahead> extends AbstractReader<T> {
   reader: Reader<ReadToken<T>>;
@@ -13,9 +13,17 @@ export class LookaheadReader<T, Ahead> extends AbstractReader<T> {
       .map(tokens => tokens[0]);
   }
 
-  read(str: string, index: number): ReadToken<T> | null {
-    const value = this.reader.read(str, index);
-    if (value == null) return null;
-    return value.value;
+  read(str: string, index: number): ReadResult<T> {
+    const result = this.reader.read(str, index);
+    if (result.type === 'failure') return result;
+    const token = result.value;
+    return {
+      type: 'token',
+      position: token.position,
+      next: token.next,
+      length: token.length,
+      value: token.value,
+      failures: result.failures
+    };
   }
 }

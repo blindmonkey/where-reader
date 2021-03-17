@@ -1,9 +1,9 @@
 import { Reader } from "./Reader";
-import { ReadToken } from "./ReadToken";
+import { ReadResult } from "./ReadResult";
 
 export abstract class AbstractReader<T> implements Reader<T> {
   abstract label: string;
-  abstract read(str: string, index: number): ReadToken<T>|null;
+  abstract read(str: string, index: number): ReadResult<T>;
   or<Other>(other: Reader<Other>): EitherReader<T, Other> {
     return new EitherReader(this, other);
   }
@@ -25,8 +25,8 @@ export abstract class AbstractReader<T> implements Reader<T> {
   wrappedBy<Wrapper>(wrapper: Reader<Wrapper>): WrappedReader<T, Wrapper> {
     return new WrappedReader(this, wrapper);
   }
-  labeled(label: string): LabeledReader<T> {
-    return new LabeledReader(this, label);
+  labeled(label: string, options: LabelOptions = {}): LabeledReader<T> {
+    return new LabeledReader(this, label, options);
   }
   failWhen(condition: (value: T) => boolean): FailReader<T> {
     return new FailReader(this, condition);
@@ -37,18 +37,23 @@ export abstract class AbstractReader<T> implements Reader<T> {
   optional(): OptionalReader<T> {
     return new OptionalReader(this);
   }
+  ignoringSuccessFailures(): IgnoreFailuresReader<T> {
+    return new IgnoreFailuresReader(this);
+  }
 }
 
 // These imports must come at the end, otherwise, AbstractReader is undefined
 // when the subclasses try to inherit from it.
 import { EitherReader } from "./readers/EitherReader";
 import { FailReader } from "./readers/FailReader";
-import { LabeledReader } from "./readers/LabeledReader";
+import { LabeledReader, LabelOptions } from "./readers/LabeledReader";
 import { TransformReader } from "./readers/MapReader";
 import { MiddleReader } from "./readers/MiddleReader";
 import { RepeatReader } from "./readers/RepeatReader";
 import { SeparatedReader } from "./readers/SeparatedReader";
 import { Tuple2Reader } from "./readers/Tuple2Reader";
 import { WrappedReader } from "./readers/WrappedReader";
-import { LookaheadReader } from "./readers/LookaheadReader";import { OptionalReader } from "./readers/OptionalReader";
+import { LookaheadReader } from "./readers/LookaheadReader";
+import { OptionalReader } from "./readers/OptionalReader";
+import { IgnoreFailuresReader } from "./readers/IgnoreFailuresReader";
 

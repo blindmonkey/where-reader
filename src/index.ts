@@ -59,13 +59,13 @@ interface Binary extends IToken<'binary'> {
 }
 type BExpr = Literal | List<BExpr> | Binary | PropertyAccess<BExpr> | SubscriptAccess<BExpr>;
 
-const openParen = Read.char('(').labeled('open-paren');
-const closeParen = Read.char(')').labeled('close-paren');
-const openBracket = Read.char('[').labeled('open-bracket');
-const closeBracket = Read.char(']').labeled('close-bracket');
-const and = Read.literal('and', false).labeled('and-literal');
-const or = Read.literal('or', false).labeled('or-literal');
-const comma = Read.literal(',').labeled('comma');
+const openParen = Read.char('(');
+const closeParen = Read.char(')');
+const openBracket = Read.char('[');
+const closeBracket = Read.char(']');
+const and = Read.literal('and', false);
+const or = Read.literal('or', false);
+const comma = Read.char(',');
 const whitespaceChar =
   Read.char(' ')
     .or(Read.char('\t'))
@@ -73,6 +73,7 @@ const whitespaceChar =
     .labeled('whitespace-char');
 const whitespace: Reader<WhitespaceToken> =
   whitespaceChar.repeated().labeled('whitespace')
+  .ignoringSuccessFailures()
   .map(chars => ({type: 'whitespace', content: chars.map(c => c.value).join('')}));
 // The first character of an identifier must be a letter or underscore
 const identifierFirstChar = Read.regexChar(/[a-zA-Z_]/);
@@ -80,14 +81,16 @@ const identifierSubsequentChar = Read.regexChar(/[a-zA-Z0-9_]/);
 const identifier: Reader<IdentifierToken> =
   identifierFirstChar.then(identifierSubsequentChar.repeated())
   .map((tokens) => tokens[0].value + tokens[1].value.map(t => t.value).join(''))
-  .labeled('identifier')
-  .map(id => ({type: 'identifier', identifier: id}));
+  .map(id => (<IdentifierToken>{type: 'identifier', identifier: id}))
+  .labeled('identifier', {relabel: true})
+  .ignoringSuccessFailures();
 const digit = Read.regexChar(/\d/);
 const number: Reader<NumberLiteral> =
   digit.then(digit.repeated())
   .map(tokens => tokens[0].value + tokens[1].value.map(token => token.value).join(''))
-  .labeled('number')
-  .map(value => ({type: 'number', value: value}));
+  .map(value => (<NumberLiteral>{type: 'number', value: value}))
+  .labeled('number literal', {relabel: true})
+  .ignoringSuccessFailures();
 
 const literal: Reader<Literal> = identifier.or(number).labeled('literal');
 
@@ -96,7 +99,7 @@ const exprDel = new DelegatingReader<Expr>()
 
 const list: Reader<List<Expr>> = exprDel
   .separatedBy(comma.wrappedBy(whitespace))
-  .between(openParen, closeParen)
+  .between(openParen.wrappedBy(whitespace), closeParen.wrappedBy(whitespace))
   .labeled('list')
   // TODO: Preserve position information of the tokens
   .map(tokens => ({type: 'list', tokens: tokens.map(t => t.value)}));
@@ -116,9 +119,10 @@ const operator: Reader<Operator> =
   .or(Read.literal('*'))
   .or(Read.literal('/'))
   .or(Read.literal('^'))
-  .labeled('operator');
+  .labeled('operator', {relabel: true})
+  .ignoringSuccessFailures();
 
-const parenExpr: Reader<ParenExpression<Expr>> = exprDel.between(openParen, closeParen)
+const parenExpr: Reader<ParenExpression<Expr>> = exprDel.between(openParen.wrappedBy(whitespace), closeParen.wrappedBy(whitespace))
   .map(tokens => ({
     type: 'parens',
     expr: tokens
@@ -132,7 +136,7 @@ const exprLHS: Reader<Literal | ParenExpression<Expr> | List<Expr> | PropertyAcc
       type: 'property',
       identifier: tokens[1]
     }))
-    .or(exprDel.between(openBracket, closeBracket)
+    .or(exprDel.between(openBracket.wrappedBy(whitespace), closeBracket.wrappedBy(whitespace))
       .map(tokens => (<{type: 'subscript', subscript: Expr}>{
         type: 'subscript',
         subscript: tokens
@@ -170,11 +174,12 @@ const exprLHS: Reader<Literal | ParenExpression<Expr> | List<Expr> | PropertyAcc
       return root;
     }
   })
-  .labeled('operator-lhs');
+  .labeled('operator-lhs', {context: false});
 exprDel.delegate =
   exprLHS
-    .then(operator.wrappedBy(whitespace).then(exprDel).labeled('operator-rhs').optional())
-    .labeled('operator-list')
+    .then(operator.wrappedBy(whitespace)
+      .then(exprDel.labeled('operator-rhs', {context: false})).optional())
+    .labeled('operator-list', {context: false})
   .map(tokens => {
     const rest = tokens[1].value;
     if (rest == null) {
@@ -280,7 +285,8 @@ export const expr = exprDel.wrappedBy(whitespace).lookahead(Read.eof())
     '*': {precedence: 5, associativity: 'left'},
     '/': {precedence: 5, associativity: 'left'},
     '^': {precedence: 6, associativity: 'right'}
-  }));
+  }))
+  .ignoringSuccessFailures();
 
 function compile(expression: string): string {
   class CompilationContext {
@@ -347,7 +353,7 @@ function compile(expression: string): string {
     }
   }
   const parsed = expr.read(expression, 0);
-  if (parsed == null) throw 'Parse error';
+  if (parsed.type === 'failure') throw 'Parse error';
   const compiled = compile(parsed.value, new CompilationContext());
   return `
 function(context) {

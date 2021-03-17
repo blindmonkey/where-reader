@@ -1,6 +1,6 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
-import { ReadToken } from "../ReadToken";
+import { ReadResult, ReadToken } from "../ReadResult";
 
 export class MiddleReader<Left, Middle, Right> extends AbstractReader<Middle> {
   reader: Reader<ReadToken<Middle>>;
@@ -14,15 +14,17 @@ export class MiddleReader<Left, Middle, Right> extends AbstractReader<Middle> {
       .then(right)
       .map(value => value[0].value[1]);
   }
-  read(str: string, index: number): ReadToken<Middle> | null {
-    const value = this.reader.read(str, index);
-    if (value == null) return null;
-    const middle = value.value;
+  read(str: string, index: number): ReadResult<Middle> {
+    const result = this.reader.read(str, index);
+    if (result.type === 'failure') return result;
+    const middle = result.value;
     return {
+      type: 'token',
       value: middle.value,
       position: middle.position,
       length: middle.length,
-      next: value.next
+      next: result.next,
+      failures: result.failures
     };
   }
 }

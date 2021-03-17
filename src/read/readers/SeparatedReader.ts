@@ -1,6 +1,6 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
-import { ReadToken } from "../ReadToken";
+import { ReadResult, ReadToken } from "../ReadResult";
 
 export class SeparatedReader<T, Separator> extends AbstractReader<ReadToken<T>[]> {
   reader: Reader<T>;
@@ -13,17 +13,19 @@ export class SeparatedReader<T, Separator> extends AbstractReader<ReadToken<T>[]
     this.reader = reader;
     this.sep = sep;
   }
-  read(str: string, index: number): ReadToken<ReadToken<T>[]> | null {
+  read(str: string, index: number): ReadResult<ReadToken<T>[]> {
     const reader = this.reader
       .then(this.sep.then(this.reader).repeated())
       .map((value) => [value[0]].concat(value[1].value.map((token) => token.value[1])))
     const value = reader.read(str, index);
-    if (value == null) {
+    if (value.type === 'failure') {
       return {
+        type: 'token',
         value: [],
         position: index,
         length: 0,
-        next: index
+        next: index,
+        failures: value.errors
       };
     }
     return value;
