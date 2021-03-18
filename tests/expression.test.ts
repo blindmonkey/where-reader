@@ -1,7 +1,7 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
 
-import { expr } from '../src/index';
+import { expr } from '../src/languages/where-language/readers/expression';
 import { Reader } from '../src/read/Reader';
 import { ReadFailure } from '../src/read/ReadResult';
 
