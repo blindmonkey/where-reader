@@ -1,6 +1,11 @@
 import { AbstractReader } from "../AbstractReader";
 import { ReadFailure, ReadResult } from "../ReadResult";
 
+/**
+ * Reads a single specific character from the next index. Read will fail when
+ * the character doesn't match the expected character. This reader can be either
+ * case-sensitive or insensitive, and is case-sensitive by default.
+ */
 export class CharReader<T extends string> extends AbstractReader<T> {
   label: string;
   expected: T;
@@ -30,15 +35,21 @@ export class CharReader<T extends string> extends AbstractReader<T> {
     };
   }
   read(str: string, index: number): ReadResult<T> {
+    // EOF case
     if (index >= str.length) return this.failure(index);
-    const char = str[index];
-    if (!this.compare(char)) return this.failure(index);
+    // Char doesn't match
+    if (!this.compare(str[index])) return this.failure(index);
     return {
       type: 'token',
+      // It seems more valuable to return the expected character since in the
+      // case-insensitive mode of operation, this would end up being
+      // unpredictable. This way, it's guaranteed to match `T` when `T` is a
+      // specific character string.
       value: this.expected,
       position: index,
       length: 1,
-      next: index + 1
+      next: index + 1,
+      errors: []
     };
   }
 }

@@ -3,7 +3,7 @@ import { FailReader } from "./readers/FailReader";
 import { IgnoreFailuresReader } from "./readers/IgnoreFailuresReader";
 import { LabeledReader, LabelOptions } from "./readers/LabeledReader";
 import { LookaheadReader } from "./readers/LookaheadReader";
-import { TransformReader } from "./readers/MapReader";
+import { MapReader } from "./readers/MapReader";
 import { MiddleReader } from "./readers/MiddleReader";
 import { OptionalReader } from "./readers/OptionalReader";
 import { RepeatReader } from "./readers/RepeatReader";
@@ -16,7 +16,7 @@ export interface Reader<T> {
   label: string;
   read(str: string, index: number): ReadResult<T>;
   or<Other>(other: Reader<Other>): EitherReader<T, Other>;
-  map<Output>(f: (input: T) => Output): TransformReader<T, Output>;
+  map<Output>(f: (input: T) => Output): MapReader<T, Output>;
   then<Next>(next: Reader<Next>): Tuple2Reader<T, Next>;
   repeated(): RepeatReader<T>;
   separatedBy<Sep>(sep: Reader<Sep>): SeparatedReader<T, Sep>;

@@ -1,8 +1,12 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadResult } from "../ReadResult";
-import { Tuple2Reader } from "./Tuple2Reader";
 
+/**
+ * Reads a `T` via a delegate `Reader`, surrounded by `Wrapper`. For instance,
+ * useful for reading symbols that may be surrounded by whitespace. The
+ * `Wrapper`s are ignored in the final result.
+ */
 export class WrappedReader<T, Wrapper> extends AbstractReader<T> {
   reader: Reader<T>;
   wrapper: Reader<Wrapper>;
@@ -26,7 +30,7 @@ export class WrappedReader<T, Wrapper> extends AbstractReader<T> {
       position: token.position,
       length: token.length,
       next: result.next,
-      failures: result.failures
+      errors: result.errors
     };
   }
 }

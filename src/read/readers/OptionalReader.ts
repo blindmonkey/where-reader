@@ -2,6 +2,10 @@ import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadResult } from "../ReadResult";
 
+/**
+ * Defers the read logic to a delegate `Reader`, but returns a success (`null`)
+ * if that read fails.
+ */
 export class OptionalReader<T> extends AbstractReader<T | null> {
   reader: Reader<T>;
   get label(): string {
@@ -20,7 +24,7 @@ export class OptionalReader<T> extends AbstractReader<T | null> {
         position: index,
         next: index,
         length: 0,
-        failures: value.errors
+        errors: value.errors
       };
     }
     return value;

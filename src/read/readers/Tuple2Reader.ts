@@ -2,6 +2,9 @@ import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadResult, ReadToken } from "../ReadResult";
 
+/**
+ * Reads two `Reader`s in immediate sequence.
+ */
 export class Tuple2Reader<A, B> extends AbstractReader<[ReadToken<A>, ReadToken<B>]> {
   a: Reader<A>;
   b: Reader<B>;
@@ -20,7 +23,7 @@ export class Tuple2Reader<A, B> extends AbstractReader<[ReadToken<A>, ReadToken<
     if (b.type === 'failure') {
       return {
         type: 'failure',
-        errors: (a.failures ?? []).concat(b.errors)
+        errors: (a.errors ?? []).concat(b.errors)
       };
     }
     return {
@@ -29,7 +32,7 @@ export class Tuple2Reader<A, B> extends AbstractReader<[ReadToken<A>, ReadToken<
       position: index,
       length: b.position + b.length - a.position,
       next: b.next,
-      failures: (a.failures ?? []).concat(b.failures ?? [])
+      errors: (a.errors ?? []).concat(b.errors ?? [])
     };
   }
 }

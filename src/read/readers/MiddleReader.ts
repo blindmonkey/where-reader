@@ -2,6 +2,10 @@ import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadResult, ReadToken } from "../ReadResult";
 
+/**
+ * Reads something between two other readers where the left and right readers
+ * don't matter. For instance, reading something between parentheses.
+ */
 export class MiddleReader<Left, Middle, Right> extends AbstractReader<Middle> {
   reader: Reader<ReadToken<Middle>>;
   get label(): string {
@@ -24,7 +28,7 @@ export class MiddleReader<Left, Middle, Right> extends AbstractReader<Middle> {
       position: middle.position,
       length: middle.length,
       next: result.next,
-      failures: result.failures
+      errors: result.errors
     };
   }
 }

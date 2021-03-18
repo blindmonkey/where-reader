@@ -2,6 +2,10 @@ import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadResult, ReadToken } from "../ReadResult";
 
+/**
+ * Repeatedly defers to a `Reader<T>`, separated by a `Separator`. The
+ * `Separator`s are ignored in the result.
+ */
 export class SeparatedReader<T, Separator> extends AbstractReader<ReadToken<T>[]> {
   reader: Reader<T>;
   sep: Reader<Separator>;
@@ -25,7 +29,7 @@ export class SeparatedReader<T, Separator> extends AbstractReader<ReadToken<T>[]
         position: index,
         length: 0,
         next: index,
-        failures: value.errors
+        errors: value.errors
       };
     }
     return value;

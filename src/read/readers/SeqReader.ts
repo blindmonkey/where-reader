@@ -1,7 +1,12 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
-import { ReadFailure, ReadResult, ReadToken } from "../ReadResult";
+import { ReadResult, ReadToken } from "../ReadResult";
 
+/**
+ * Reads a number of explicitly specified `Reader`s arranged sequentially.
+ * However, because of a lack of support for variadic generics in TypeScript,
+ * `T` must be the same for all the readers.
+ */
 export class SeqReader<T> extends AbstractReader<ReadToken<T>[]> {
   readers: Reader<T>[];
   get label(): string {
@@ -18,7 +23,8 @@ export class SeqReader<T> extends AbstractReader<ReadToken<T>[]> {
         value: [],
         position: index,
         length: 0,
-        next: index
+        next: index,
+        errors: []
       };
     }
     const tokens: ReadToken<T>[] = [];
@@ -37,7 +43,7 @@ export class SeqReader<T> extends AbstractReader<ReadToken<T>[]> {
       position: index,
       length: lastToken == null ? 0 : lastToken.position + lastToken.length - index,
       next: lastToken == null ? index : lastToken.next,
-      failures: tokens.map(tokens => tokens.failures ?? []).flatMap(t => t)
+      errors: tokens.map(tokens => tokens.errors ?? []).flatMap(t => t)
     };
   }
 }

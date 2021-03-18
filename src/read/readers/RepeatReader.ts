@@ -2,6 +2,9 @@ import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadFailure, ReadResult, ReadToken } from "../ReadResult";
 
+/**
+ * Repeatedly defers to a delegate `Reader` until it fails.
+ */
 export class RepeatReader<T> extends AbstractReader<ReadToken<T>[]> {
   reader: Reader<T>;
   get label(): string {
@@ -31,7 +34,7 @@ export class RepeatReader<T> extends AbstractReader<ReadToken<T>[]> {
       position: index,
       length: lastToken == null ? 0 : lastToken.position + lastToken.length - index,
       next: lastToken == null ? index : lastToken.next,
-      failures: failure.errors
+      errors: failure.errors
     };
   }
 }

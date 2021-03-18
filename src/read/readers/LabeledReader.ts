@@ -6,6 +6,14 @@ export interface LabelOptions {
   relabel?: boolean;
   context?: boolean;
 }
+
+/**
+ * The `LabeledReader` is essentially used for debugging and error reporting.
+ * Its ability is two-fold:
+ * 1. Coalesce the errors of its delegate reader under a single label, via the
+ *    `relabel` option.
+ * 2. Add its label to the context, via the `context` option.
+ */
 export class LabeledReader<T> extends AbstractReader<T> {
   label: string;
   delegate: Reader<T>;
@@ -40,7 +48,6 @@ export class LabeledReader<T> extends AbstractReader<T> {
     }
   }
   read(str: string, index: number): ReadResult<T> {
-    // console.info('Reading:', this.label, str.slice(index));
     const result = this.delegate.read(str, index);
     if (result.type === 'failure') {
       return {
@@ -54,7 +61,7 @@ export class LabeledReader<T> extends AbstractReader<T> {
       position: result.position,
       length: result.length,
       next: result.next,
-      failures: this.modifyErrors(result.failures ?? [], index)
+      errors: this.modifyErrors(result.errors ?? [], index)
     };
   }
 }

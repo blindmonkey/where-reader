@@ -3,6 +3,10 @@ import { ReadResult } from "../ReadResult";
 import { CharReader } from "./CharReader";
 import { SeqReader } from "./SeqReader";
 
+/**
+ * Reads a string literal. `T` should be specified to be a specific string,
+ * though could simply be `string` if the situation calls for it.
+ */
 export class LiteralReader<T extends string> extends AbstractReader<T> {
   label: string;
   reader: SeqReader<string>;
@@ -32,7 +36,8 @@ export class LiteralReader<T extends string> extends AbstractReader<T> {
       value: value.value.map(token => token.value).join('') as T,
       position: value.position,
       length: value.length,
-      next: value.next
+      next: value.next,
+      errors: []
     };
   }
 }

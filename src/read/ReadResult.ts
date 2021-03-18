@@ -6,7 +6,7 @@ export interface ReadToken<T> {
   position: number;
   length: number;
   next: number;
-  failures?: ReadError[];
+  errors: ReadError[];
 }
 
 export interface ReadError {
@@ -17,12 +17,6 @@ export interface ReadError {
 export interface ReadFailure {
   type: 'failure';
   errors: ReadError[];
-  // reader: string,
-  // reader: Reader<T>;
-  // expected: string;
-  // position: number;
-  // subfailures: ReadFailure[];
-  // context: string[];
 }
 
 export type ReadResult<T> = ReadToken<T> | ReadFailure;

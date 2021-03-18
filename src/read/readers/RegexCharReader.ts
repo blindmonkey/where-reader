@@ -1,6 +1,9 @@
 import { AbstractReader } from "../AbstractReader";
 import { ReadResult } from "../ReadResult";
 
+/**
+ * Reads a single character that matches the given `RegExp`.
+ */
 export class RegexCharReader extends AbstractReader<string> {
   label: string;
   regex: RegExp;
@@ -36,7 +39,8 @@ export class RegexCharReader extends AbstractReader<string> {
       value: char,
       position: index,
       length: 1,
-      next: index + 1
+      next: index + 1,
+      errors: []
     };
   }
 }
