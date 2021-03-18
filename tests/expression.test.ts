@@ -92,11 +92,11 @@ function read<T>(reader: Reader<T>, string: string, withContext: boolean = true)
   }
   return result.value;
 }
-function identifier(identifier: string) {
-  return { type: 'identifier', identifier };
+function identifier(identifier: string, position: number, length: number) {
+  return { type: 'identifier', identifier, position, length };
 }
-function number(value: string) {
-  return { type: 'number', value };
+function number(value: string, position: number = 0, length: number = 0) {
+  return { type: 'number', value, position, length };
 }
 function binary<Op extends string, LHS, RHS>(operator: Op, lhs: LHS, rhs: RHS) {
   return { type: 'binary', operator, lhs, rhs };
@@ -285,36 +285,36 @@ describe('expression', function() {
 
   it('valid identifier', function() {
     expect(read(expr, 'x'))
-      .to.deep.equal(identifier('x'));
+      .to.deep.equal(identifier('x', 0, 1));
 
     expect(read(expr, 'x12'))
-      .to.deep.equal(identifier('x12'));
+      .to.deep.equal(identifier('x12', 0, 3));
 
     expect(read(expr, 'yyz'))
-      .to.deep.equal(identifier('yyz'));
+      .to.deep.equal(identifier('yyz', 0, 3));
   });
 
   it('number', function() {
     expect(read(expr, '1'))
-      .to.deep.equal(number('1'));
+      .to.deep.equal(number('1', 0, 1));
     expect(read(expr, '123'))
-      .to.deep.equal(number('123'));
+      .to.deep.equal(number('123', 0, 3));
   });
 
   it('single condition', function() {
     expect(read(expr, 'x = 5'))
-      .to.deep.equal(binary('=', identifier('x'), number('5')));
+      .to.deep.equal(binary('=', identifier('x', 0, 1), number('5', 4, 1)));
   });
 
   it('nested boolean operator', function() {
     expect(read(expr, 'x = (5 and 3)'))
       .to.deep.equal(binary(
         '=',
-        identifier('x'),
+        identifier('x', 0, 1),
         binary(
           'and',
-          number('5'),
-          number('3')
+          number('5', 5, 1),
+          number('3', 11, 1)
         )
       ));
   });
@@ -325,23 +325,23 @@ describe('expression', function() {
         binary('and',
           binary('<=',
             property(
-              property(identifier('x'), identifier('y')),
-              identifier('z')),
-            number('5')),
+              property(identifier('x', 0, 1), identifier('y', 2, 1)),
+              identifier('z', 4, 1)),
+            number('5', 9, 1)),
           binary('>=',
             property(
               subscript(
-                subscript(identifier('y'), number('1')),
-                number('2')),
-              identifier('z')),
-            number('3'))
+                subscript(identifier('y', 15, 1), number('1', 17, 1)),
+                number('2', 20, 1)),
+              identifier('z', 23, 1)),
+            number('3', 28, 1))
         ),
         binary('in',
-          identifier('z'),
+          identifier('z', 33, 1),
           list(
-            number('1'),
-            number('2'),
-            number('3')
+            number('1', 39, 1),
+            number('2', 42, 1),
+            number('3', 45, 1)
           )
         )
         ));
@@ -357,8 +357,8 @@ describe('expression', function() {
               binary('+',
                 binary('+',
                   binary('+',
-                    binary('+', id('a'), id('b')),
-                    id('c')),
+                    binary('+', id('a', 0, 1), id('b', 2, 1)),
+                    id('c', 4, 1)),
                   binary('*',
                     binary('*',
                       binary('*',
@@ -366,24 +366,24 @@ describe('expression', function() {
                           binary('*',
                             binary('*',
                               binary('*',
-                                binary('*', id('d'), id('e')),
-                                id('f')),
-                              id('g')),
+                                binary('*', id('d', 6, 1), id('e', 8, 1)),
+                                id('f', 10, 1)),
+                              id('g', 12, 1)),
                             binary('^',
-                              id('h'),
+                              id('h', 14, 1),
                               binary('^',
-                                id('i'),
+                                id('i', 16, 1),
                                 binary('^',
-                                  id('j'),
-                                  binary('^', id('k'), id('l')))))),
-                          id('m')),
-                        id('n')),
-                      id('o')),
-                    id('p'))),
-                id('q')),
-              id('r')),
-            id('s')),
-          id('t'))
+                                  id('j', 18, 1),
+                                  binary('^', id('k', 20, 1), id('l', 22, 1)))))),
+                          id('m', 24, 1)),
+                        id('n', 26, 1)),
+                      id('o', 28, 1)),
+                    id('p', 30, 1))),
+                id('q', 32, 1)),
+              id('r', 34, 1)),
+            id('s', 36, 1)),
+          id('t', 38, 1))
       );
   });
 
@@ -393,25 +393,25 @@ describe('expression', function() {
         binary('or',
           binary('and',
             binary('<=',
-              identifier('x'),
-              number('5')),
+              identifier('x', 0, 1),
+              number('5', 5, 1)),
             binary('and',
               binary('and',
                 binary('>=',
-                  identifier('y'),
-                  number('3')),
+                  identifier('y', 12, 1),
+                  number('3', 17, 1)),
                 binary('<',
-                  identifier('y'),
-                  number('5'))),
+                  identifier('y', 23, 1),
+                  number('5', 27, 1))),
               binary('<',
-                identifier('x'),
-                number('3')))),
+                identifier('x', 33, 1),
+                number('3', 37, 1)))),
           binary('in',
-            identifier('z'),
+            identifier('z', 43, 1),
             list(
-              number('1'),
-              number('2'),
-              number('3'))))
+              number('1', 49, 1),
+              number('2', 52, 1),
+              number('3', 55, 1))))
       );
   });
 });

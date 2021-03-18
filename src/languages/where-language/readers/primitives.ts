@@ -18,7 +18,12 @@ const identifierSubsequentChar = Read.regexChar(/[a-zA-Z0-9_]/);
 export const identifier: Reader<IdentifierToken> =
   identifierFirstChar.then(identifierSubsequentChar.repeated())
   .map((tokens) => tokens[0].value + tokens[1].value.map(t => t.value).join(''))
-  .map(id => (<IdentifierToken>{type: 'identifier', identifier: id}))
+  .mapToken<IdentifierToken>(token => ({
+    type: 'identifier',
+    identifier: token.value,
+    position: token.position,
+    length: token.length
+  }))
   .labeled('identifier', {relabel: true})
   .ignoringSuccessFailures();
 
@@ -26,7 +31,12 @@ export const identifier: Reader<IdentifierToken> =
 export const number: Reader<NumberLiteral> =
   digit.then(digit.repeated())
   .map(tokens => tokens[0].value + tokens[1].value.map(token => token.value).join(''))
-  .map(value => (<NumberLiteral>{type: 'number', value: value}))
+  .mapToken<NumberLiteral>(token => ({
+    type: 'number',
+    value: token.value,
+    position: token.position,
+    length: token.length
+  }))
   .labeled('number literal', {relabel: true})
   .ignoringSuccessFailures();
 

@@ -1,5 +1,6 @@
 import { EitherReader } from "./readers/EitherReader";
 import { FailReader } from "./readers/FailReader";
+import { FlatMapReader } from "./readers/FlatMapReader";
 import { IgnoreFailuresReader } from "./readers/IgnoreFailuresReader";
 import { LabeledReader, LabelOptions } from "./readers/LabeledReader";
 import { LookaheadReader } from "./readers/LookaheadReader";
@@ -10,7 +11,7 @@ import { RepeatReader } from "./readers/RepeatReader";
 import { SeparatedReader } from "./readers/SeparatedReader";
 import { Tuple2Reader } from "./readers/Tuple2Reader";
 import { WrappedReader } from "./readers/WrappedReader";
-import { ReadResult } from "./ReadResult";
+import { ReadResult, ReadToken } from "./ReadResult";
 
 export interface Reader<T> {
   /**
@@ -36,6 +37,18 @@ export interface Reader<T> {
    * @param f Transform `T` into `Output`.
    */
   map<Output>(f: (input: T) => Output): MapReader<T, Output>;
+
+  /**
+   * Transforms the token returned by `this` `Reader` to a result.
+   * @param f The transform function.
+   */
+  flatMap<Output>(f: (token: ReadToken<T>) => ReadResult<Output>): FlatMapReader<T, Output>;
+
+  /**
+   * Transforms the token returned by `this` `Reader` to a different type.
+   * @param f The transform function.
+   */
+  mapToken<Output>(f: (token: ReadToken<T>) => Output): FlatMapReader<T, Output>;
 
   /**
    * First read `this`, then read `Next`.

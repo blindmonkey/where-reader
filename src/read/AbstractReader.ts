@@ -1,5 +1,5 @@
 import { Reader } from "./Reader";
-import { ReadResult } from "./ReadResult";
+import { ReadResult, ReadToken } from "./ReadResult";
 
 export abstract class AbstractReader<T> implements Reader<T> {
   abstract label: string;
@@ -9,6 +9,19 @@ export abstract class AbstractReader<T> implements Reader<T> {
   }
   map<Output>(f: (input: T) => Output): MapReader<T, Output> {
     return new MapReader(this, f);
+  }
+  flatMap<Output>(f: (token: ReadToken<T>) => ReadResult<Output>): FlatMapReader<T, Output> {
+    return new FlatMapReader(this, f);
+  }
+  mapToken<Output>(f: (token: ReadToken<T>) => Output): FlatMapReader<T, Output> {
+    return new FlatMapReader(this, token => ({
+      type: 'token',
+      value: f(token),
+      position: token.position,
+      length: token.length,
+      next: token.next,
+      errors: token.errors
+    }))
   }
   then<Next>(next: Reader<Next>): Tuple2Reader<T, Next> {
     return new Tuple2Reader(this, next);
@@ -56,4 +69,5 @@ import { WrappedReader } from "./readers/WrappedReader";
 import { LookaheadReader } from "./readers/LookaheadReader";
 import { OptionalReader } from "./readers/OptionalReader";
 import { IgnoreFailuresReader } from "./readers/IgnoreFailuresReader";
+import { FlatMapReader } from "./readers/FlatMapReader";
 

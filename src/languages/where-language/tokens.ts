@@ -1,13 +1,17 @@
+interface TokenPosition {
+  position: number;
+  length: number;
+}
 export interface IToken<Type extends string> {
   type: Type;
 }
 export interface WhitespaceToken extends IToken<'whitespace'> {
   content: string;
 }
-export interface IdentifierToken extends IToken<'identifier'> {
+export interface IdentifierToken extends IToken<'identifier'>, TokenPosition {
   identifier: string;
 }
-export interface NumberLiteral extends IToken<'number'> {
+export interface NumberLiteral extends IToken<'number'>, TokenPosition {
   value: string;
 }
 export type MathOperator = '+' | '-' | '*' | '/' | '^';
