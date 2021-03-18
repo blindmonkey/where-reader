@@ -14,6 +14,9 @@ export interface IdentifierToken extends IToken<'identifier'>, TokenPosition {
 export interface NumberLiteral extends IToken<'number'>, TokenPosition {
   value: string;
 }
+export interface StringLiteral extends IToken<'string'>, TokenPosition {
+  content: string;
+}
 export type MathOperator = '+' | '-' | '*' | '/' | '^';
 export type EqualityOperator = '=' | '<=' | '>=' | '<' | '>';
 export type BooleanOperator = 'and' | 'or';
@@ -42,7 +45,7 @@ export function isMathOperator(op: Operator): op is MathOperator {
       return false
   }
 }
-export type Literal = NumberLiteral | IdentifierToken;
+export type Literal = NumberLiteral | IdentifierToken | StringLiteral;
 export type Expr = Literal | List<Expr> | ParenExpression<Expr> | OperatorTokens | PropertyAccess<Expr> | SubscriptAccess<Expr>;
 export interface List<Expr> extends IToken<'list'> {
   tokens: Expr[];

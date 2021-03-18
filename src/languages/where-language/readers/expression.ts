@@ -114,6 +114,7 @@ function processPrecedence(e: Expr, precedence: {[k in Operator]: {precedence: n
   switch (e.type) {
     case 'identifier':
     case 'number':
+    case 'string':
       return e;
     case 'property':
       return {

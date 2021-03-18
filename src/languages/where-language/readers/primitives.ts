@@ -1,6 +1,6 @@
 import { Read } from "../../../read/Read";
 import { Reader } from "../../../read/Reader";
-import { IdentifierToken, Literal, NumberLiteral, WhitespaceToken } from "../tokens";
+import { IdentifierToken, Literal, NumberLiteral, StringLiteral, WhitespaceToken } from "../tokens";
 
 const whitespaceChar =
   Read.char(' ')
@@ -40,4 +40,21 @@ export const number: Reader<NumberLiteral> =
   .labeled('number literal', {relabel: true})
   .ignoringSuccessFailures();
 
-export const literal: Reader<Literal> = identifier.or(number).labeled('literal');
+export const string: Reader<StringLiteral> =
+  Read.literal('\\"').map(_ => '"')
+    .or(Read.literal('\\\\').map(_ => '\\'))
+    .or(Read.nextChar().failWhen(c => c === '"'))
+    .repeated()
+    .wrappedBy(Read.char('"'))
+    .map(tokens => tokens.map(token => token.value).join(''))
+    .mapToken<StringLiteral>(token => ({
+      type: 'string',
+      // Compensate for the quotes
+      position: token.position - 1,
+      length: token.length + 2,
+      content: token.value
+    }))
+    .labeled('string literal', {relabel: true})
+    .ignoringSuccessFailures();
+
+export const literal: Reader<Literal> = identifier.or(number).or(string).labeled('literal');

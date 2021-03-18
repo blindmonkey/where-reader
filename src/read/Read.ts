@@ -1,6 +1,7 @@
 import { CharReader } from "./readers/CharReader";
 import { EOFReader } from "./readers/EOFReader";
 import { LiteralReader } from "./readers/LiteralReader";
+import { NextCharReader } from "./readers/NextCharReader";
 import { RegexCharReader } from "./readers/RegexCharReader";
 
 export class Read {
@@ -13,6 +14,10 @@ export class Read {
    */
   static char<T extends string>(expected: T, caseSensitive: boolean = true): CharReader<T> {
     return new CharReader(expected, caseSensitive);
+  }
+
+  static nextChar(): NextCharReader {
+    return new NextCharReader();
   }
 
   /**
