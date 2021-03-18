@@ -27,7 +27,34 @@ interface IdentifierToken extends IToken<'identifier'> {
 interface NumberLiteral extends IToken<'number'> {
   value: string;
 }
-type Operator = '=' | '<=' | '>=' | '<' | '>' | 'in' | 'and' | 'or' | '+' | '-' | '*' | '/' | '^';
+type MathOperator = '+' | '-' | '*' | '/' | '^';
+type EqualityOperator = '=' | '<=' | '>=' | '<' | '>';
+type BooleanOperator = 'and' | 'or';
+type Operator = 'in' | EqualityOperator | MathOperator | BooleanOperator;
+function isEqualityOperator(op: Operator): op is EqualityOperator {
+  switch (op) {
+    case '=':
+    case '<=':
+    case '>=':
+    case '<':
+    case '>':
+      return true;
+    default:
+      return false;
+  }
+}
+function isMathOperator(op: Operator): op is MathOperator {
+  switch (op) {
+    case '+':
+    case '-':
+    case '*':
+    case '/':
+    case '^':
+      return true;
+    default:
+      return false
+  }
+}
 type Literal = NumberLiteral | IdentifierToken;
 type Expr = Literal | List<Expr> | ParenExpression<Expr> | OperatorTokens | PropertyAccess<Expr> | SubscriptAccess<Expr>;
 interface List<Expr> extends IToken<'list'> {
@@ -149,10 +176,7 @@ const exprLHS: Reader<Literal | ParenExpression<Expr> | List<Expr> | PropertyAcc
     } else {
       let root: Expr = tokens[0].value;
       const rhs = tokens[1].value;
-      // 'a.b.c' => 'a' ['b', 'c']
-      // prop(prop('a', 'b'), 'c')
       for (let i = 0; i < rhs.length; i++) {
-        // const token = rhs[rhs.length - 1 - i];
         const token = rhs[i].value;
         switch (token.type) {
           case 'property':
@@ -254,8 +278,6 @@ function processPrecedence(e: Expr, precedence: {[k in Operator]: {precedence: n
         }
         output.push(token);
         operators.push(operator);
-        // push it onto the operator stack.
-        // output = appendToken(output, operator, token);
       });
       while (operators.length > 0) {
         const rhs = output.pop()!;
@@ -323,33 +345,41 @@ function compile(expression: string): string {
       case 'binary':
         const lhs = compile(expr.lhs, context);
         const rhs = compile(expr.rhs, context);
-        function compileBinary(op: Operator, lhs: string, rhs: string): string {
-          switch (op) {
-            case '+':
-            case '-':
-            case '*':
-            case '/':
-            case '<=':
-            case '>=':
-            case '<':
-            case '>':
-              return `${lhs} ${op} ${rhs}`;
-            case '=':
-              return `${lhs} === ${rhs}`;
-            case '^':
-              return `Math.pow(${lhs}, ${rhs})`;
+        if (isMathOperator(expr.operator) || isEqualityOperator(expr.operator)) {
+          function compileMathOrEqualityOperator(op: MathOperator | EqualityOperator): string {
+            switch (op) {
+              case '+':
+              case '-':
+              case '*':
+              case '/':
+              case '<=':
+              case '>=':
+              case '<':
+              case '>':
+                return `${lhs.id} ${op} ${rhs.id}`;
+              case '=':
+                return `${lhs.id} === ${rhs.id}`;
+              case '^':
+                return `Math.pow(${lhs.id}, ${rhs.id})`;
+            }
+          }
+          return result(`(${compileMathOrEqualityOperator(expr.operator)})`, `${lhs.code}${rhs.code}`);
+        } else {
+          switch (expr.operator) {
             case 'and':
-              return `${lhs} && ${rhs}`;
+              return {
+                id: id,
+                code: `${lhs.code}if (${lhs.id}) {\n${rhs.code}var ${id} = ${rhs.id};\n} else { var ${id} = ${lhs.id}; }`
+              }
             case 'or':
-              return `${lhs} || ${rhs}`;
+              return {
+                id: id,
+                code: `${lhs.code}if (${lhs.id}) { var ${id} = ${lhs.id};\n} else {\n${rhs.code}var ${id} = ${rhs.id};\n}`
+              }
             case 'in':
-            // default:
-              throw `Unsupported operator ${op}`;
+              throw `Unsupported operator ${expr.operator}`;
           }
         }
-        return result(`(${compileBinary(expr.operator, lhs.id, rhs.id)})`, `${lhs.code}${rhs.code}`);
-      // default:
-      //   throw `unsupported ${expr.type}`;
     }
   }
   const parsed = expr.read(expression, 0);
@@ -363,6 +393,7 @@ return ${compiled.id};
 }
 
 console.log(compile('a.b.c[1 + x].d and z = (1, 2, 3 + 4)'));
+console.log(compile('a or b'));
 console.log(JSON.stringify(expr.read('a.b.c[1 + 2].d', 0)));
 console.log(JSON.stringify(expr.read('yyz', 0)));
 console.log(JSON.stringify(expr.read('    x = 5', 0)));
