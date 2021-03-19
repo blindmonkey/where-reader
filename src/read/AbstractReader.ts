@@ -7,8 +7,8 @@ export abstract class AbstractReader<T> implements Reader<T> {
   or<Other>(other: Reader<Other>): EitherReader<T, Other> {
     return new EitherReader(this, other);
   }
-  map<Output>(f: (input: T) => Output): MapReader<T, Output> {
-    return new MapReader(this, f);
+  map<Output>(f: (input: T) => Output): FlatMapReader<T, Output> {
+    return this.mapToken(token => f(token.value));
   }
   flatMap<Output>(f: (token: ReadToken<T>) => ReadResult<Output>): FlatMapReader<T, Output> {
     return new FlatMapReader(this, f);
@@ -60,7 +60,6 @@ export abstract class AbstractReader<T> implements Reader<T> {
 import { EitherReader } from "./readers/EitherReader";
 import { FailReader } from "./readers/FailReader";
 import { LabeledReader, LabelOptions } from "./readers/LabeledReader";
-import { MapReader } from "./readers/MapReader";
 import { MiddleReader } from "./readers/MiddleReader";
 import { RepeatReader } from "./readers/RepeatReader";
 import { SeparatedReader } from "./readers/SeparatedReader";

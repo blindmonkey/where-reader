@@ -4,7 +4,6 @@ import { FlatMapReader } from "./readers/FlatMapReader";
 import { IgnoreFailuresReader } from "./readers/IgnoreFailuresReader";
 import { LabeledReader, LabelOptions } from "./readers/LabeledReader";
 import { LookaheadReader } from "./readers/LookaheadReader";
-import { MapReader } from "./readers/MapReader";
 import { MiddleReader } from "./readers/MiddleReader";
 import { OptionalReader } from "./readers/OptionalReader";
 import { RepeatReader } from "./readers/RepeatReader";
@@ -36,7 +35,7 @@ export interface Reader<T> {
    * Transform the output of `this` `Reader`.
    * @param f Transform `T` into `Output`.
    */
-  map<Output>(f: (input: T) => Output): MapReader<T, Output>;
+  map<Output>(f: (input: T) => Output): Reader<Output>;
 
   /**
    * Transforms the token returned by `this` `Reader` to a result.
