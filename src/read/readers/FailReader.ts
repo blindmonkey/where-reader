@@ -11,7 +11,7 @@ export class FailReader<T> extends AbstractReader<T> {
   reader: Reader<T>;
   condition: (value: T) => boolean;
   get label(): string {
-    return this.reader.label;
+    return `${this.reader.label} fails on condition`;
   }
   constructor(reader: Reader<T>, condition: (value: T) => boolean) {
     super();
@@ -19,19 +19,19 @@ export class FailReader<T> extends AbstractReader<T> {
     this.condition = condition;
   }
   read(str: string, index: number): ReadResult<T> {
-    const value = this.reader.read(str, index);
-    if (value.type === 'failure') {
-      return value;
-    } else if (this.condition(value.value)) {
+    const result = this.reader.read(str, index);
+    if (result.type === 'failure') {
+      return result;
+    } else if (this.condition(result.value)) {
       return {
         type: 'failure',
         errors: [{
-          expected: `${this.reader.label} failed by condition`,
+          expected: this.label,
           position: index,
           context: []
         }]
       };
     }
-    return value;
+    return result;
   }
 }
