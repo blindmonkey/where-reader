@@ -1,10 +1,10 @@
-import { EitherReader } from "./readers/EitherReader";
 import { FailReader } from "./readers/FailReader";
 import { LabelOptions } from "./readers/LabelOptions";
 import { LookaheadReader } from "./readers/LookaheadReader";
 import { MiddleReader } from "./readers/MiddleReader";
 import { OptionalReader } from "./readers/OptionalReader";
 import { RepeatReader } from "./readers/RepeatReader";
+import { LabelArgument } from "./readers/ResultMapReader";
 import { SeparatedReader } from "./readers/SeparatedReader";
 import { Tuple2Reader } from "./readers/Tuple2Reader";
 import { WrappedReader } from "./readers/WrappedReader";
@@ -27,27 +27,27 @@ export interface Reader<T> {
    * Attempt to read from `other` when `this` reader fails.
    * @param other The reader to try if `this` one fails.
    */
-  or<Other>(other: Reader<Other>): EitherReader<T, Other>;
+  or<Other>(other: Reader<Other>): Reader<T | Other>;
 
   /**
    * Transform the output of `this` `Reader`.
    * @param f Transform `T` into `Output`.
    */
-  map<Output>(f: (input: T) => Output): Reader<Output>;
+  map<Output>(f: (input: T) => Output, label?: LabelArgument): Reader<Output>;
 
-  mapResult<Output>(f: (result: ReadResult<T>, position: number) => ReadResult<Output>): Reader<Output>;
+  mapResult<Output>(f: (result: ReadResult<T>, str: string, position: number) => ReadResult<Output>, label?: LabelArgument): Reader<Output>;
 
   /**
    * Transforms the token returned by `this` `Reader` to a result.
    * @param f The transform function.
    */
-  flatMap<Output>(f: (token: ReadToken<T>, position: number) => ReadResult<Output>): Reader<Output>;
+  flatMap<Output>(f: (token: ReadToken<T>, str: string, position: number) => ReadResult<Output>, label?: LabelArgument): Reader<Output>;
 
   /**
    * Transforms the token returned by `this` `Reader` to a different type.
    * @param f The transform function.
    */
-  mapToken<Output>(f: (token: ReadToken<T>) => Output): Reader<Output>;
+  mapToken<Output>(f: (token: ReadToken<T>) => Output, label?: LabelArgument): Reader<Output>;
 
   /**
    * First read `this`, then read `Next`.

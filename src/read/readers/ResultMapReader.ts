@@ -2,17 +2,26 @@ import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadResult, ReadToken } from "../ReadResult";
 
+export type LabelArgument = string | null | (() => string);
+
 /**
  * Transform the `ReadToken<T>` into a `ReadResult<Output>`.
  */
 export class ResultMapReader<T, Output> extends AbstractReader<Output> {
-  private label_: string | null;
+  private label_: LabelArgument;
   reader: Reader<T>;
-  transform: (token: ReadResult<T>, position: number) => ReadResult<Output>;
+  transform: (token: ReadResult<T>, str: string, position: number) => ReadResult<Output>;
   get label(): string {
-    return this.label_ ?? this.reader.label;
+    const label = this.label_;
+    if (typeof(label) === 'string') {
+      return label;
+    } else if (label != null) {
+      return label();
+    } else {
+      return this.reader.label;
+    }
   }
-  constructor(reader: Reader<T>, transform: (token: ReadResult<T>, position: number) => ReadResult<Output>, label: string | null = null) {
+  constructor(reader: Reader<T>, transform: (token: ReadResult<T>, str: string, position: number) => ReadResult<Output>, label: LabelArgument = null) {
     super();
     this.label_ = label;
     this.reader = reader;
@@ -20,6 +29,6 @@ export class ResultMapReader<T, Output> extends AbstractReader<Output> {
   }
   read(str: string, index: number): ReadResult<Output> {
     const result = this.reader.read(str, index);
-    return this.transform(result, index);
+    return this.transform(result, str, index);
   }
 }

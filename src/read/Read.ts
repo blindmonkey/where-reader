@@ -38,7 +38,7 @@ export class Read {
     const label = `"${literal}"`;
     const reader = new SeqReader(readers);
     return reader
-      .mapResult((result, index) => {
+      .mapResult((result, _, index) => {
         if (result.type === 'failure') {
           const failure: ReadFailure = {
             type: 'failure',
