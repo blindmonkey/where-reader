@@ -6,13 +6,15 @@ import { ReadResult, ReadToken } from "../ReadResult";
  * Transform the `ReadToken<T>` into a `ReadResult<Output>`.
  */
 export class ResultMapReader<T, Output> extends AbstractReader<Output> {
+  private label_: string | null;
   reader: Reader<T>;
   transform: (token: ReadResult<T>, position: number) => ReadResult<Output>;
   get label(): string {
-    return this.reader.label;
+    return this.label_ ?? this.reader.label;
   }
-  constructor(reader: Reader<T>, transform: (token: ReadResult<T>, position: number) => ReadResult<Output>) {
+  constructor(reader: Reader<T>, transform: (token: ReadResult<T>, position: number) => ReadResult<Output>, label: string | null = null) {
     super();
+    this.label_ = label;
     this.reader = reader;
     this.transform = transform;
   }

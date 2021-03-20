@@ -10,16 +10,16 @@ export abstract class AbstractReader<T> implements Reader<T> {
   map<Output>(f: (input: T) => Output): Reader<Output> {
     return this.mapToken(token => f(token.value));
   }
-  mapResult<Output>(f: (result: ReadResult<T>, position: number) => ReadResult<Output>): Reader<Output> {
-    return new ResultMapReader(this, f);
+  mapResult<Output>(f: (result: ReadResult<T>, position: number) => ReadResult<Output>, label?: string): Reader<Output> {
+    return new ResultMapReader(this, f, label);
   }
-  flatMap<Output>(f: (token: ReadToken<T>, position: number) => ReadResult<Output>): Reader<Output> {
+  flatMap<Output>(f: (token: ReadToken<T>, position: number) => ReadResult<Output>, label?: string): Reader<Output> {
     return this.mapResult((result, position) => {
       if (result.type === 'failure') return result;
       return f(result, position);
-    });
+    }, label);
   }
-  mapToken<Output>(f: (token: ReadToken<T>) => Output): Reader<Output> {
+  mapToken<Output>(f: (token: ReadToken<T>) => Output, label?: string): Reader<Output> {
     return this.flatMap(token => ({
       type: 'token',
       value: f(token),
@@ -27,7 +27,7 @@ export abstract class AbstractReader<T> implements Reader<T> {
       length: token.length,
       next: token.next,
       errors: token.errors
-    }))
+    }), label);
   }
   then<Next>(next: Reader<Next>): Tuple2Reader<T, Next> {
     return new Tuple2Reader(this, next);
@@ -77,7 +77,7 @@ export abstract class AbstractReader<T> implements Reader<T> {
         next: result.next,
         errors: modifyErrors(result.errors, index)
       };
-    });
+    }, label);
   }
   failWhen(condition: (value: T) => boolean): FailReader<T> {
     return new FailReader(this, condition);

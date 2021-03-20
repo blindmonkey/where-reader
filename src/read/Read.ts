@@ -58,8 +58,7 @@ export class Read {
           next: result.next,
           errors: []
         };
-      })
-      .labeled(label, {context: false});
+      }, label);
   }
 
   /**
