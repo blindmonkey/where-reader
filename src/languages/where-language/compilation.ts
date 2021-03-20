@@ -28,6 +28,25 @@ function compileMathOrEqualityOperator(op: MathOperator | EqualityOperator, lhs:
   }
 }
 
+/**
+ * Escapes the given string for inclusion in double quotes.
+ * @param s The string to escape.
+ */
+function escapeString(s: string): string {
+  const out: string[] = [];
+  for (let i = 0; i < s.length; i++) {
+    const char = s[i];
+    if (char === '"') out.push('\\"');
+    else if (char === '\\') out.push('\\\\');
+    else if (char === '\n') out.push('\\n');
+    else if (char === '\r') out.push('\\r');
+    else if (char === '\t') out.push('\\t');
+    // TODO: Escape more things, especially unicode chars.
+    else out.push(char);
+  }
+  return out.join('');
+}
+
 function compileExpression(expr: BExpr, context: CompilationContext): {id: string, code: string} {
   const id = context.id;
   function result(expr: string, deps: string = '') {
@@ -41,6 +60,8 @@ function compileExpression(expr: BExpr, context: CompilationContext): {id: strin
       return result(`context['${expr.identifier}']`);
     case 'number':
       return result(expr.value);
+    case 'string':
+      return result(`"${escapeString(expr.content)}"`)
     case 'property':
       const e = compileExpression(expr.expr, context);
       return result(`${e.id}.${expr.identifier.identifier}`, e.code);
