@@ -61,7 +61,7 @@ export class LabeledReader<T> extends AbstractReader<T> {
       position: result.position,
       length: result.length,
       next: result.next,
-      errors: this.modifyErrors(result.errors ?? [], index)
+      errors: this.modifyErrors(result.errors, index)
     };
   }
 }
