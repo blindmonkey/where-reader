@@ -28,7 +28,7 @@ export class Read {
    * @param caseSensitive Whether the read should be case-sensitive.
    * @returns A `Reader` which reads the string literal.
    */
-  static literal<T extends string>(literal: T, caseSensitive: boolean = true): LiteralReader<T> {
+  static literal<T extends string>(literal: T, caseSensitive?: boolean): LiteralReader<T> {
     return new LiteralReader(literal, caseSensitive);
   }
 
