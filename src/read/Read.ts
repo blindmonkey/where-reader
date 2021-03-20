@@ -1,8 +1,10 @@
+import { Reader } from "./Reader";
 import { CharReader } from "./readers/CharReader";
 import { EOFReader } from "./readers/EOFReader";
-import { LiteralReader } from "./readers/LiteralReader";
 import { NextCharReader } from "./readers/NextCharReader";
 import { RegexCharReader } from "./readers/RegexCharReader";
+import { SeqReader } from "./readers/SeqReader";
+import { ReadFailure, ReadResult } from "./ReadResult";
 
 export class Read {
   /**
@@ -28,8 +30,36 @@ export class Read {
    * @param caseSensitive Whether the read should be case-sensitive.
    * @returns A `Reader` which reads the string literal.
    */
-  static literal<T extends string>(literal: T, caseSensitive?: boolean): LiteralReader<T> {
-    return new LiteralReader(literal, caseSensitive);
+  static literal<T extends string>(literal: T, caseSensitive?: boolean): Reader<T> {
+    const readers: CharReader<any>[] = [];
+    for (let i = 0; i < literal.length; i++) {
+      readers.push(new CharReader(literal[i], caseSensitive));
+    }
+    const label = `"${literal}"`;
+    const reader = new SeqReader(readers);
+    return reader
+      .mapResult((result, index) => {
+        if (result.type === 'failure') {
+          const failure: ReadFailure = {
+            type: 'failure',
+            errors: [{
+              expected: label,
+              position: index,
+              context: []
+            }]
+          };
+          return failure;
+        }
+        return {
+          type: 'token',
+          value: result.value.map(token => token.value).join('') as T,
+          position: result.position,
+          length: result.length,
+          next: result.next,
+          errors: []
+        };
+      })
+      .labeled(label, {context: false});
   }
 
   /**
