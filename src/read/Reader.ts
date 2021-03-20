@@ -1,6 +1,5 @@
 import { EitherReader } from "./readers/EitherReader";
 import { FailReader } from "./readers/FailReader";
-import { IgnoreFailuresReader } from "./readers/IgnoreFailuresReader";
 import { LabelOptions } from "./readers/LabelOptions";
 import { LookaheadReader } from "./readers/LookaheadReader";
 import { MiddleReader } from "./readers/MiddleReader";
@@ -109,5 +108,5 @@ export interface Reader<T> {
   /**
    * Don't propagate errors that occur on success.
    */
-  ignoringSuccessFailures(): IgnoreFailuresReader<T>;
+  ignoringSuccessFailures(): Reader<T>;
 }

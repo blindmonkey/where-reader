@@ -88,8 +88,15 @@ export abstract class AbstractReader<T> implements Reader<T> {
   optional(): OptionalReader<T> {
     return new OptionalReader(this);
   }
-  ignoringSuccessFailures(): IgnoreFailuresReader<T> {
-    return new IgnoreFailuresReader(this);
+  ignoringSuccessFailures(): Reader<T> {
+    return this.flatMap(result => ({
+      type: 'token',
+      position: result.position,
+      length: result.length,
+      value: result.value,
+      next: result.next,
+      errors: []
+    }));
   }
 }
 
@@ -105,6 +112,5 @@ import { Tuple2Reader } from "./readers/Tuple2Reader";
 import { WrappedReader } from "./readers/WrappedReader";
 import { LookaheadReader } from "./readers/LookaheadReader";
 import { OptionalReader } from "./readers/OptionalReader";
-import { IgnoreFailuresReader } from "./readers/IgnoreFailuresReader";
 import { ResultMapReader } from "./readers/ResultMapReader";
 
