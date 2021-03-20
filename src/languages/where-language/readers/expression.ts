@@ -18,8 +18,7 @@ function getLast<T>(a: T[]): T {
   return a[a.length - 1];
 }
 
-const exprDel = new DelegatingReader<Expr>()
-  .labeled('expression');
+const exprDel = new DelegatingReader<Expr>();
 
 const list: Reader<List<Expr>> = exprDel
   .separatedBy(comma.wrappedBy(whitespace))
@@ -84,7 +83,7 @@ exprDel.delegate =
     .then(operator.wrappedBy(whitespace)
       .then(exprDel.labeled('operator-rhs', {context: false})).optional())
     .labeled('operator-list', {context: false})
-  .map(tokens => {
+  .map<Expr>(tokens => {
     const rest = tokens[1].value;
     if (rest == null) {
       return tokens[0].value;
@@ -108,7 +107,8 @@ exprDel.delegate =
         ]
       };
     }
-  });
+  })
+  .labeled('expression');
 
 function processPrecedence(e: Expr, precedence: {[k in Operator]: {precedence: number, associativity: 'left' | 'right'}}): BExpr {
   switch (e.type) {

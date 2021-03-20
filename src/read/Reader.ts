@@ -1,8 +1,7 @@
 import { EitherReader } from "./readers/EitherReader";
 import { FailReader } from "./readers/FailReader";
-import { FlatMapReader } from "./readers/FlatMapReader";
 import { IgnoreFailuresReader } from "./readers/IgnoreFailuresReader";
-import { LabeledReader, LabelOptions } from "./readers/LabeledReader";
+import { LabelOptions } from "./readers/LabelOptions";
 import { LookaheadReader } from "./readers/LookaheadReader";
 import { MiddleReader } from "./readers/MiddleReader";
 import { OptionalReader } from "./readers/OptionalReader";
@@ -37,17 +36,19 @@ export interface Reader<T> {
    */
   map<Output>(f: (input: T) => Output): Reader<Output>;
 
+  mapResult<Output>(f: (result: ReadResult<T>, position: number) => ReadResult<Output>): Reader<Output>;
+
   /**
    * Transforms the token returned by `this` `Reader` to a result.
    * @param f The transform function.
    */
-  flatMap<Output>(f: (token: ReadToken<T>) => ReadResult<Output>): FlatMapReader<T, Output>;
+  flatMap<Output>(f: (token: ReadToken<T>, position: number) => ReadResult<Output>): Reader<Output>;
 
   /**
    * Transforms the token returned by `this` `Reader` to a different type.
    * @param f The transform function.
    */
-  mapToken<Output>(f: (token: ReadToken<T>) => Output): FlatMapReader<T, Output>;
+  mapToken<Output>(f: (token: ReadToken<T>) => Output): Reader<Output>;
 
   /**
    * First read `this`, then read `Next`.
@@ -86,7 +87,7 @@ export interface Reader<T> {
    * @param label The label to apply.
    * @param options The options detailing how to apply the label.
    */
-  labeled(label: string, options?: LabelOptions): LabeledReader<T>;
+  labeled(label: string, options?: LabelOptions): Reader<T>;
 
   /**
    * Read via `this` `Reader`, but fail when a condition succeeds.

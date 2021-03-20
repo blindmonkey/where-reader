@@ -5,20 +5,19 @@ import { ReadResult, ReadToken } from "../ReadResult";
 /**
  * Transform the `ReadToken<T>` into a `ReadResult<Output>`.
  */
-export class FlatMapReader<T, Output> extends AbstractReader<Output> {
+export class ResultMapReader<T, Output> extends AbstractReader<Output> {
   reader: Reader<T>;
-  transform: (token: ReadToken<T>) => ReadResult<Output>;
+  transform: (token: ReadResult<T>, position: number) => ReadResult<Output>;
   get label(): string {
     return this.reader.label;
   }
-  constructor(reader: Reader<T>, transform: (token: ReadToken<T>) => ReadResult<Output>) {
+  constructor(reader: Reader<T>, transform: (token: ReadResult<T>, position: number) => ReadResult<Output>) {
     super();
     this.reader = reader;
     this.transform = transform;
   }
   read(str: string, index: number): ReadResult<Output> {
     const result = this.reader.read(str, index);
-    if (result.type === 'failure') return result;
-    return this.transform(result);
+    return this.transform(result, index);
   }
 }
