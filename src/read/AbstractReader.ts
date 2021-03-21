@@ -124,7 +124,6 @@ export abstract class AbstractReader<T> implements Reader<T> {
       }
       return result;
     }, label);
-    // return new FailReader(this, condition);
   }
   lookahead<Ahead>(ahead: Reader<Ahead>): Reader<T> {
     return this.then(ahead)

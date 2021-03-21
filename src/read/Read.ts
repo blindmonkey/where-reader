@@ -34,10 +34,8 @@ export class Read {
     if (expected.length !== 1)
       throw 'Read.char can only read one character at a time';
     return Read.nextChar()
-      .mapResult<T>((result, _, index) => {
-        if (result.type === 'failure') {
-          return failure(index);
-        }
+      .labeled(label, {relabel: true})
+      .flatMap<T>((result, _, index) => {
         // Char doesn't match
         if (!compare(result.value)) {
           return failure(index);
@@ -54,7 +52,7 @@ export class Read {
           next: result.next,
           errors: []
         };
-      }, label)
+      }, label);
   }
 
   static nextChar(): NextCharReader {
