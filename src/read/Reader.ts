@@ -1,10 +1,5 @@
-import { FailReader } from "./readers/FailReader";
 import { LabelOptions } from "./readers/LabelOptions";
-import { MiddleReader } from "./readers/MiddleReader";
-import { RepeatReader } from "./readers/RepeatReader";
 import { LabelArgument } from "./readers/ResultMapReader";
-import { SeparatedReader } from "./readers/SeparatedReader";
-import { WrappedReader } from "./readers/WrappedReader";
 import { ReadResult, ReadToken } from "./ReadResult";
 
 export interface Reader<T> {
@@ -55,27 +50,27 @@ export interface Reader<T> {
   /**
    * Repeatedly read `T` via `this` `Reader` until failure.
    */
-  repeated(): RepeatReader<T>;
+  repeated(): Reader<ReadToken<T>[]>;
 
   /**
    * Repeatedly read `T` via `this` `Reader`, separated by `sep`.
    * @param sep The reader for the separator.
    */
-  separatedBy<Sep>(sep: Reader<Sep>): SeparatedReader<T, Sep>;
+  separatedBy<Sep>(sep: Reader<Sep>): Reader<ReadToken<T>[]>;
 
   /**
    * Read this reader, surrounded by `left` and `right`, respectively.
    * @param left The `Reader` to read first.
    * @param right The `Reader` to read last.
    */
-  between<Left, Right>(left: Reader<Left>, right: Reader<Right>): MiddleReader<Left, T, Right>;
+  between<Left, Right>(left: Reader<Left>, right: Reader<Right>): Reader<T>;
 
   /**
    * Like `between`, but the before and after `Reader`s are assumed to be the
    * same.
    * @param wrapper The `Reader` that `this` should be surrounded by.
    */
-  wrappedBy<Wrapper>(wrapper: Reader<Wrapper>): WrappedReader<T, Wrapper>;
+  wrappedBy<Wrapper>(wrapper: Reader<Wrapper>): Reader<T>;
 
   /**
    * Apply a label to the result of `this` `Reader`, either by adding to the
@@ -89,7 +84,7 @@ export interface Reader<T> {
    * Read via `this` `Reader`, but fail when a condition succeeds.
    * @param condition The condition under which the read should fail.
    */
-  failWhen(condition: (value: T) => boolean): FailReader<T>;
+  failWhen(condition: (value: T) => boolean): Reader<T>;
 
   /**
    * Read via `this` `Reader`, and ensure that `ahead` follows.

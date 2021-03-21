@@ -109,8 +109,22 @@ export abstract class AbstractReader<T> implements Reader<T> {
       };
     }, label);
   }
-  failWhen(condition: (value: T) => boolean): FailReader<T> {
-    return new FailReader(this, condition);
+  failWhen(condition: (value: T) => boolean): Reader<T> {
+    const label = () => `${this.label} fails on condition`;
+    return this.flatMap<T>((result, _, index) => {
+      if (condition(result.value)) {
+        return {
+          type: 'failure',
+          errors: [{
+            expected: label(),
+            position: index,
+            context: []
+          }]
+        };
+      }
+      return result;
+    }, label);
+    // return new FailReader(this, condition);
   }
   lookahead<Ahead>(ahead: Reader<Ahead>): Reader<T> {
     return this.then(ahead)
@@ -157,7 +171,6 @@ export abstract class AbstractReader<T> implements Reader<T> {
 
 // These imports must come at the end, otherwise, AbstractReader is undefined
 // when the subclasses try to inherit from it.
-import { FailReader } from "./readers/FailReader";
 import { LabelOptions } from "./readers/LabelOptions";
 import { MiddleReader } from "./readers/MiddleReader";
 import { RepeatReader } from "./readers/RepeatReader";
