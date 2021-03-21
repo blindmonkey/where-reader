@@ -41,8 +41,18 @@ export const number: Reader<NumberLiteral> =
   .ignoringSuccessFailures();
 
 export const string: Reader<StringLiteral> =
-  Read.literal('\\"').map(_ => '"')
-    .or(Read.literal('\\\\').map(_ => '\\'))
+  Read.char('\\')
+    .then(
+      Read.char('n').map(() => '\n')
+      .or(Read.char('\\').map(() => '\\'))
+      .or(Read.fail((s, i) => ({
+        type: 'failure',
+        errors: [{
+          expected: i < s.length ? `Unsupported character following string escape: ${s[i]}` : 'Unexpected EOF',
+          position: i,
+          context: []
+        }]
+      }))))
     .or(Read.nextChar().failWhen(c => c === '"'))
     .repeated()
     .wrappedBy(Read.char('"'))

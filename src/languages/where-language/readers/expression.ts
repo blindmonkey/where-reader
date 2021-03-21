@@ -78,7 +78,7 @@ const exprLHS: Reader<Literal | ParenExpression<Expr> | List<Expr> | PropertyAcc
   })
   .labeled('operator-lhs', {context: false});
 
-exprDel.delegate =
+exprDel.setDelegate(
   exprLHS
     .then(operator.wrappedBy(whitespace)
       .then(exprDel.labeled('operator-rhs', {context: false})).optional())
@@ -108,7 +108,7 @@ exprDel.delegate =
       };
     }
   })
-  .labeled('expression');
+  .labeled('expression'));
 
 function processPrecedence(e: Expr, precedence: {[k in Operator]: {precedence: number, associativity: 'left' | 'right'}}): BExpr {
   switch (e.type) {

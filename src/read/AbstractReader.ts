@@ -126,8 +126,22 @@ export abstract class AbstractReader<T> implements Reader<T> {
         };
       });
   }
-  optional(): OptionalReader<T> {
-    return new OptionalReader(this);
+  optional(): Reader<T | null> {
+    return this.mapResult<T | null>((result, _, index) => {
+      switch (result.type) {
+        case 'failure':
+          return {
+            type: 'token',
+            value: null,
+            position: index,
+            next: index,
+            length: 0,
+            errors: result.errors
+          };
+        case 'token':
+          return result;
+      }
+    }, () => `[${this.label}]`);
   }
   ignoringSuccessFailures(): Reader<T> {
     return this.flatMap(result => ({

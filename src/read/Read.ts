@@ -1,5 +1,5 @@
 import { Reader } from "./Reader";
-import { EOFReader } from "./readers/EOFReader";
+import { DelegatingReader } from "./readers/DelegatingReader";
 import { NextCharReader } from "./readers/NextCharReader";
 import { RegexCharReader } from "./readers/RegexCharReader";
 import { SeqReader } from "./readers/SeqReader";
@@ -115,7 +115,31 @@ export class Read {
    * Ensure that there are no more characters in the string being read.
    * @returns A `Reader` which succeeds when at the end of the string.
    */
-  static eof(): EOFReader {
-    return new EOFReader();
+  static eof(): Reader<null> {
+    const label = '<EOF>';
+    return new DelegatingReader<null>((str, index) => {
+      if (index >= str.length) {
+        return {
+          type: 'token',
+          value: null,
+          position: index,
+          length: 0,
+          next: index,
+          errors: []
+        };
+      }
+      return {
+        type: 'failure',
+        errors: [{
+          expected: label,
+          position: index,
+          context: []
+        }]
+      };
+    }, label);
+  }
+
+  static fail<T>(f: (str: string, index: number) => ReadFailure): Reader<T> {
+    return new DelegatingReader(f, '<fail>');
   }
 }

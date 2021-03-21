@@ -101,7 +101,7 @@ export interface Reader<T> {
   /**
    * Read via `this` `Reader`, or simply return an empty read if it fails.
    */
-  optional(): OptionalReader<T>;
+  optional(): Reader<T | null>;
 
   /**
    * Don't propagate errors that occur on success.
