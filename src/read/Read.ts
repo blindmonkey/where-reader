@@ -31,7 +31,7 @@ export class Read {
    * @returns A `Reader` which reads the string literal.
    */
   static literal<T extends string>(literal: T, caseSensitive?: boolean): Reader<T> {
-    const readers: CharReader<any>[] = [];
+    const readers: CharReader<string>[] = [];
     for (let i = 0; i < literal.length; i++) {
       readers.push(new CharReader(literal[i], caseSensitive));
     }

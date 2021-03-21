@@ -43,8 +43,24 @@ export abstract class AbstractReader<T> implements Reader<T> {
       errors: token.errors
     }), label);
   }
-  then<Next>(next: Reader<Next>): Tuple2Reader<T, Next> {
-    return new Tuple2Reader(this, next);
+  then<Next>(next: Reader<Next>): Reader<[ReadToken<T>, ReadToken<Next>]> {
+    return this.flatMap((a, str, index) => {
+      const b = next.read(str, a.next);
+      if (b.type === 'failure') {
+        return <ReadFailure>{
+          type: 'failure',
+          errors: a.errors.concat(b.errors)
+        };
+      }
+      return {
+        type: 'token',
+        value: [a, b],
+        position: index,
+        length: b.next - index,
+        next: b.next,
+        errors: a.errors.concat(b.errors)
+      };
+    }, () => `${this.label} ${next.label}`);
   }
   repeated(): RepeatReader<T> {
     return new RepeatReader(this);
@@ -121,7 +137,6 @@ import { LabelOptions } from "./readers/LabelOptions";
 import { MiddleReader } from "./readers/MiddleReader";
 import { RepeatReader } from "./readers/RepeatReader";
 import { SeparatedReader } from "./readers/SeparatedReader";
-import { Tuple2Reader } from "./readers/Tuple2Reader";
 import { WrappedReader } from "./readers/WrappedReader";
 import { LookaheadReader } from "./readers/LookaheadReader";
 import { OptionalReader } from "./readers/OptionalReader";

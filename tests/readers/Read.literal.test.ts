@@ -2,7 +2,7 @@ import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import { Read } from '../../src/read/Read';
 
-describe('LiteralReader', function() {
+describe('Read.literal', function() {
   it('reads case sensitive', function() {
     expect(Read.literal('xyz', true).read('axyz', 1))
       .to.deep.equal({

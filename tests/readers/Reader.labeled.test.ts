@@ -2,7 +2,7 @@ import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import { Read } from '../../src/read/Read';
 
-describe('LabeledReader', function() {
+describe('Reader.labeled', function() {
   const base = Read.char('x').then(Read.char('y').repeated());
   const reader = base.labeled('token x', {relabel: false, context: false});
   const relabel = base.labeled('token x', {relabel: true});

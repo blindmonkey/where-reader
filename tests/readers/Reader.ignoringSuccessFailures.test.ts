@@ -2,7 +2,7 @@ import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import { Read } from '../../src/read/Read';
 
-describe('IgnoresFailuresReader', function() {
+describe('Reader.ignoringSuccessFailures', function() {
   const reader = Read.char('x').then(Read.char('y').repeated()).ignoringSuccessFailures();
   it('passes through label', function() {
     expect(reader.label).to.equal("'x' [...'y']");

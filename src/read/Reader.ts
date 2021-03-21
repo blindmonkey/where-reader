@@ -53,7 +53,7 @@ export interface Reader<T> {
    * First read `this`, then read `Next`.
    * @param next The reader to attempt next when this one succeeds.
    */
-  then<Next>(next: Reader<Next>): Tuple2Reader<T, Next>;
+  then<Next>(next: Reader<Next>): Reader<[ReadToken<T>, ReadToken<Next>]>;
 
   /**
    * Repeatedly read `T` via `this` `Reader` until failure.

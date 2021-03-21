@@ -2,7 +2,7 @@ import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import { Read } from '../../src/read/Read';
 
-describe('EitherReader', function() {
+describe('Reader.or', function() {
   const reader = Read.char('a').or(Read.char('b'));
   it('has the correct label', function() {
     expect(reader.label).to.be.equal("'a' | 'b'");
