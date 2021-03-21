@@ -6,7 +6,6 @@ import { OptionalReader } from "./readers/OptionalReader";
 import { RepeatReader } from "./readers/RepeatReader";
 import { LabelArgument } from "./readers/ResultMapReader";
 import { SeparatedReader } from "./readers/SeparatedReader";
-import { Tuple2Reader } from "./readers/Tuple2Reader";
 import { WrappedReader } from "./readers/WrappedReader";
 import { ReadResult, ReadToken } from "./ReadResult";
 
@@ -47,7 +46,7 @@ export interface Reader<T> {
    * Transforms the token returned by `this` `Reader` to a different type.
    * @param f The transform function.
    */
-  mapToken<Output>(f: (token: ReadToken<T>) => Output, label?: LabelArgument): Reader<Output>;
+  mapToken<Output>(f: (token: ReadToken<T>, str: string, position: number) => Output, label?: LabelArgument): Reader<Output>;
 
   /**
    * First read `this`, then read `Next`.

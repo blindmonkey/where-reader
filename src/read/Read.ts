@@ -1,10 +1,9 @@
 import { Reader } from "./Reader";
-import { CharReader } from "./readers/CharReader";
 import { EOFReader } from "./readers/EOFReader";
 import { NextCharReader } from "./readers/NextCharReader";
 import { RegexCharReader } from "./readers/RegexCharReader";
 import { SeqReader } from "./readers/SeqReader";
-import { ReadFailure, ReadResult } from "./ReadResult";
+import { ReadFailure, ReadResult, ReadToken } from "./ReadResult";
 
 export class Read {
   /**
@@ -14,8 +13,48 @@ export class Read {
    * @param caseSensitive Whether the read should be case-sensitive.
    * @returns A `Reader` which reads the character.
    */
-  static char<T extends string>(expected: T, caseSensitive: boolean = true): CharReader<T> {
-    return new CharReader(expected, caseSensitive);
+  static char<T extends string>(expected: T, caseSensitive: boolean = true): Reader<T> {
+    function compare(char: string): boolean {
+      if (caseSensitive) {
+        return char === expected;
+      }
+      return char.toLowerCase() === expected.toLowerCase();
+    }
+    const label = `'${expected}'`;
+    function failure(index: number): ReadFailure {
+      return {
+        type: 'failure',
+        errors: [{
+          position: index,
+          expected: label,
+          context: []
+        }]
+      };
+    }
+    if (expected.length !== 1)
+      throw 'Read.char can only read one character at a time';
+    return Read.nextChar()
+      .mapResult<T>((result, _, index) => {
+        if (result.type === 'failure') {
+          return failure(index);
+        }
+        // Char doesn't match
+        if (!compare(result.value)) {
+          return failure(index);
+        }
+        return {
+          type: 'token',
+          // It seems more valuable to return the expected character since in the
+          // case-insensitive mode of operation, this would end up being
+          // unpredictable. This way, it's guaranteed to match `T` when `T` is a
+          // specific character string.
+          value: expected,
+          position: result.position,
+          length: result.length,
+          next: result.next,
+          errors: []
+        };
+      }, label)
   }
 
   static nextChar(): NextCharReader {
@@ -31,9 +70,9 @@ export class Read {
    * @returns A `Reader` which reads the string literal.
    */
   static literal<T extends string>(literal: T, caseSensitive?: boolean): Reader<T> {
-    const readers: CharReader<string>[] = [];
+    const readers: Reader<string>[] = [];
     for (let i = 0; i < literal.length; i++) {
-      readers.push(new CharReader(literal[i], caseSensitive));
+      readers.push(Read.char(literal[i], caseSensitive));
     }
     const label = `"${literal}"`;
     const reader = new SeqReader(readers);

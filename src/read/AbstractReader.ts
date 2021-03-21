@@ -33,10 +33,10 @@ export abstract class AbstractReader<T> implements Reader<T> {
       return f(result, str, position);
     }, label);
   }
-  mapToken<Output>(f: (token: ReadToken<T>) => Output, label?: LabelArgument): Reader<Output> {
-    return this.flatMap(token => ({
+  mapToken<Output>(f: (token: ReadToken<T>, str: string, position: number) => Output, label?: LabelArgument): Reader<Output> {
+    return this.flatMap((token, str, position) => ({
       type: 'token',
-      value: f(token),
+      value: f(token, str, position),
       position: token.position,
       length: token.length,
       next: token.next,
