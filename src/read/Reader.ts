@@ -1,7 +1,6 @@
 import { FailReader } from "./readers/FailReader";
 import { LabelOptions } from "./readers/LabelOptions";
 import { MiddleReader } from "./readers/MiddleReader";
-import { OptionalReader } from "./readers/OptionalReader";
 import { RepeatReader } from "./readers/RepeatReader";
 import { LabelArgument } from "./readers/ResultMapReader";
 import { SeparatedReader } from "./readers/SeparatedReader";

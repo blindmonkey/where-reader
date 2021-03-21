@@ -163,6 +163,5 @@ import { MiddleReader } from "./readers/MiddleReader";
 import { RepeatReader } from "./readers/RepeatReader";
 import { SeparatedReader } from "./readers/SeparatedReader";
 import { WrappedReader } from "./readers/WrappedReader";
-import { OptionalReader } from "./readers/OptionalReader";
 import { LabelArgument, ResultMapReader } from "./readers/ResultMapReader";
 
