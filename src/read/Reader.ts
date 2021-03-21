@@ -1,6 +1,5 @@
 import { FailReader } from "./readers/FailReader";
 import { LabelOptions } from "./readers/LabelOptions";
-import { LookaheadReader } from "./readers/LookaheadReader";
 import { MiddleReader } from "./readers/MiddleReader";
 import { OptionalReader } from "./readers/OptionalReader";
 import { RepeatReader } from "./readers/RepeatReader";
@@ -97,7 +96,7 @@ export interface Reader<T> {
    * Read via `this` `Reader`, and ensure that `ahead` follows.
    * @param ahead The `Reader` that reads what comes after `this`.
    */
-  lookahead<Ahead>(ahead: Reader<Ahead>): LookaheadReader<T, Ahead>;
+  lookahead<Ahead>(ahead: Reader<Ahead>): Reader<T>;
 
   /**
    * Read via `this` `Reader`, or simply return an empty read if it fails.

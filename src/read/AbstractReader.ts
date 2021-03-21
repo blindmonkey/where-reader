@@ -112,8 +112,19 @@ export abstract class AbstractReader<T> implements Reader<T> {
   failWhen(condition: (value: T) => boolean): FailReader<T> {
     return new FailReader(this, condition);
   }
-  lookahead<Ahead>(ahead: Reader<Ahead>): LookaheadReader<T, Ahead> {
-    return new LookaheadReader(this, ahead);
+  lookahead<Ahead>(ahead: Reader<Ahead>): Reader<T> {
+    return this.then(ahead)
+      .flatMap(result => {
+        const token = result.value[0];
+        return {
+          type: 'token',
+          position: token.position,
+          next: token.next,
+          length: token.length,
+          value: token.value,
+          errors: result.errors
+        };
+      });
   }
   optional(): OptionalReader<T> {
     return new OptionalReader(this);
@@ -138,7 +149,6 @@ import { MiddleReader } from "./readers/MiddleReader";
 import { RepeatReader } from "./readers/RepeatReader";
 import { SeparatedReader } from "./readers/SeparatedReader";
 import { WrappedReader } from "./readers/WrappedReader";
-import { LookaheadReader } from "./readers/LookaheadReader";
 import { OptionalReader } from "./readers/OptionalReader";
 import { LabelArgument, ResultMapReader } from "./readers/ResultMapReader";
 
