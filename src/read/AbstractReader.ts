@@ -85,8 +85,17 @@ export abstract class AbstractReader<T> implements Reader<T> {
   separatedBy<Sep>(sep: Reader<Sep>): SeparatedReader<T, Sep> {
     return new SeparatedReader(this, sep);
   }
-  between<Left, Right>(left: Reader<Left>, right: Reader<Right>): MiddleReader<Left, T, Right> {
-    return new MiddleReader(left, this, right);
+  between<Left, Right>(left: Reader<Left>, right: Reader<Right>): Reader<T> {
+    return left.then(this).then(right)
+      .map<ReadToken<T>>(tokens => tokens[0].value[1])
+      .flatMap<T>(token => ({
+        type: 'token',
+        value: token.value.value,
+        position: token.value.position,
+        length: token.value.length,
+        next: token.next,
+        errors: token.errors
+      }));
   }
   wrappedBy<Wrapper>(wrapper: Reader<Wrapper>): WrappedReader<T, Wrapper> {
     return new WrappedReader(this, wrapper);
@@ -190,7 +199,6 @@ export abstract class AbstractReader<T> implements Reader<T> {
 // These imports must come at the end, otherwise, AbstractReader is undefined
 // when the subclasses try to inherit from it.
 import { LabelOptions } from "./readers/LabelOptions";
-import { MiddleReader } from "./readers/MiddleReader";
 import { RepeatReader } from "./readers/RepeatReader";
 import { SeparatedReader } from "./readers/SeparatedReader";
 import { WrappedReader } from "./readers/WrappedReader";
