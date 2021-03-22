@@ -21,38 +21,19 @@ export class Read {
       return char.toLowerCase() === expected.toLowerCase();
     }
     const label = `'${expected}'`;
-    function failure(index: number): ReadFailure {
-      return {
+    if (expected.length !== 1)
+      throw 'Read.char can only read one character at a time';
+    return Read.nextChar()
+      .failWhen(value => !compare(value))
+      .mapToken(() => expected, label)
+      .mapFailure((_1, _2, index) => ({
         type: 'failure',
         errors: [{
           position: index,
           expected: label,
           context: []
         }]
-      };
-    }
-    if (expected.length !== 1)
-      throw 'Read.char can only read one character at a time';
-    return Read.nextChar()
-      .labeled(label, {relabel: true})
-      .flatMap<T>((result, _, index) => {
-        // Char doesn't match
-        if (!compare(result.value)) {
-          return failure(index);
-        }
-        return {
-          type: 'token',
-          // It seems more valuable to return the expected character since in the
-          // case-insensitive mode of operation, this would end up being
-          // unpredictable. This way, it's guaranteed to match `T` when `T` is a
-          // specific character string.
-          value: expected,
-          position: result.position,
-          length: result.length,
-          next: result.next,
-          errors: []
-        };
-      }, label);
+      }), label);
   }
 
   static nextChar(): NextCharReader {

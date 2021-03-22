@@ -7,18 +7,23 @@ export abstract class AbstractReader<T> implements Reader<T> {
   or<Other>(other: Reader<Other>): Reader<T | Other> {
     // return new EitherReader(this, other);
     return this.mapResult<T | Other>((leftValue, str, index) => {
-      if (leftValue.type !== 'failure') return leftValue;
-
-      const rightValue = other.read(str, index);
-      // And argument could be made here for propagating the errors from
-      // `leftValue`. However, It's currently unclear whether there are instances
-      // where these errors would be useful.
-      if (rightValue.type !== 'failure') return rightValue;
-
-      return <ReadFailure>{
-        type: 'failure',
-        errors: leftValue.errors.concat(rightValue.errors)
-      };
+      switch (leftValue.type) {
+        case 'token':
+          return leftValue;
+        case 'failure':
+          const rightValue = other.read(str, index);
+          // And argument could be made here for propagating the errors from
+          // `leftValue`. However, It's currently unclear whether there are instances
+          // where these errors would be useful.
+          switch (rightValue.type) {
+            case 'token': return rightValue;
+            case 'failure':
+              return <ReadFailure>{
+                type: 'failure',
+                errors: leftValue.errors.concat(rightValue.errors)
+              };
+          }
+      }
     }, () => `${this.label} | ${other.label}`);
   }
   map<Output>(f: (input: T) => Output, label?: LabelArgument): Reader<Output> {
@@ -29,8 +34,18 @@ export abstract class AbstractReader<T> implements Reader<T> {
   }
   flatMap<Output>(f: (token: ReadToken<T>, str: string, position: number) => ReadResult<Output>, label?: LabelArgument): Reader<Output> {
     return this.mapResult((result, str, position) => {
-      if (result.type === 'failure') return result;
-      return f(result, str, position);
+      switch (result.type) {
+        case 'failure': return result;
+        case 'token': return f(result, str, position);
+      }
+    }, label);
+  }
+  mapFailure(f: (failure: ReadFailure, str: string, position: number) => ReadResult<T>, label?: LabelArgument): Reader<T> {
+    return this.mapResult((result, str, position) => {
+      switch (result.type) {
+        case 'failure': return f(result, str, position);
+        case 'token': return result;
+      }
     }, label);
   }
   mapToken<Output>(f: (token: ReadToken<T>, str: string, position: number) => Output, label?: LabelArgument): Reader<Output> {
@@ -46,20 +61,22 @@ export abstract class AbstractReader<T> implements Reader<T> {
   then<Next>(next: Reader<Next>): Reader<[ReadToken<T>, ReadToken<Next>]> {
     return this.flatMap((a, str, index) => {
       const b = next.read(str, a.next);
-      if (b.type === 'failure') {
-        return <ReadFailure>{
-          type: 'failure',
-          errors: a.errors.concat(b.errors)
-        };
+      switch (b.type) {
+        case 'failure':
+          return <ReadFailure>{
+            type: 'failure',
+            errors: a.errors.concat(b.errors)
+          };
+        case 'token':
+          return {
+            type: 'token',
+            value: [a, b],
+            position: index,
+            length: b.next - index,
+            next: b.next,
+            errors: a.errors.concat(b.errors)
+          };
       }
-      return {
-        type: 'token',
-        value: [a, b],
-        position: index,
-        length: b.next - index,
-        next: b.next,
-        errors: a.errors.concat(b.errors)
-      };
     }, () => `${this.label} ${next.label}`);
   }
   repeated(): RepeatReader<T> {
@@ -93,20 +110,22 @@ export abstract class AbstractReader<T> implements Reader<T> {
       }
     }
     return this.mapResult((result, _, index) => {
-      if (result.type === 'failure') {
-        return <ReadFailure>{
-          type: 'failure',
-          errors: modifyErrors(result.errors, index)
-        };
+      switch (result.type) {
+        case 'failure':
+          return <ReadFailure>{
+            type: 'failure',
+            errors: modifyErrors(result.errors, index)
+          };
+        case 'token':
+          return {
+            type: 'token',
+            value: result.value,
+            position: result.position,
+            length: result.length,
+            next: result.next,
+            errors: modifyErrors(result.errors, index)
+          };
       }
-      return {
-        type: 'token',
-        value: result.value,
-        position: result.position,
-        length: result.length,
-        next: result.next,
-        errors: modifyErrors(result.errors, index)
-      };
     }, label);
   }
   failWhen(condition: (value: T) => boolean): Reader<T> {

@@ -1,6 +1,6 @@
 import { LabelOptions } from "./readers/LabelOptions";
 import { LabelArgument } from "./readers/ResultMapReader";
-import { ReadResult, ReadToken } from "./ReadResult";
+import { ReadFailure, ReadResult, ReadToken } from "./ReadResult";
 
 export interface Reader<T> {
   /**
@@ -26,6 +26,8 @@ export interface Reader<T> {
    * @param f Transform `T` into `Output`.
    */
   map<Output>(f: (input: T) => Output, label?: LabelArgument): Reader<Output>;
+
+  mapFailure(f: (failure: ReadFailure, str: string, position: number) => ReadResult<T>, label?: LabelArgument): Reader<T>;
 
   mapResult<Output>(f: (result: ReadResult<T>, str: string, position: number) => ReadResult<Output>, label?: LabelArgument): Reader<Output>;
 
