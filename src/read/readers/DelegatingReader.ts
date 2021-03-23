@@ -1,6 +1,7 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadResult } from "../ReadResult";
+import { LabelArgument } from "./ResultMapReader";
 
 export type DelegateFn<T> = (str: string, index: number) => ReadResult<T>;
 
@@ -11,11 +12,11 @@ export type DelegateFn<T> = (str: string, index: number) => ReadResult<T>;
  */
 export class DelegatingReader<T> extends AbstractReader<T> {
   // label_?: string;
-  private delegate: {type: 'reader', reader: Reader<T>} | {type: 'function', delegate: DelegateFn<T>, label: string | (() => string)};
+  private delegate: {type: 'reader', reader: Reader<T>} | {type: 'function', delegate: DelegateFn<T>, label: LabelArgument};
   constructor();
   constructor(delegate: Reader<T>);
-  constructor(delegate: DelegateFn<T>, label: string);
-  constructor(delegate?: Reader<T> | ((str: string, index: number) => ReadResult<T>), label?: string | (() => string)) {
+  constructor(delegate: DelegateFn<T>, label: LabelArgument);
+  constructor(delegate?: Reader<T> | ((str: string, index: number) => ReadResult<T>), label?: LabelArgument) {
     super();
     if (delegate == null) {
       this.delegate = {
