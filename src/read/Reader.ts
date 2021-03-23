@@ -86,7 +86,7 @@ export interface Reader<T> {
    * Read via `this` `Reader`, but fail when a condition succeeds.
    * @param condition The condition under which the read should fail.
    */
-  failWhen(condition: (value: T) => boolean): Reader<T>;
+  failWhen(condition: (value: T, str: string, index: number) => boolean): Reader<T>;
 
   /**
    * Read via `this` `Reader`, and ensure that `ahead` follows.

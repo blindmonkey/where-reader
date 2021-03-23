@@ -161,10 +161,10 @@ export abstract class AbstractReader<T> implements Reader<T> {
       }
     }, label);
   }
-  failWhen(condition: (value: T) => boolean): Reader<T> {
+  failWhen(condition: (value: T, str: string, index: number) => boolean): Reader<T> {
     const label = () => `${this.label} fails on condition`;
-    return this.flatMap<T>((result, _, index) => {
-      if (condition(result.value)) {
+    return this.flatMap<T>((result, str, index) => {
+      if (condition(result.value, str, index)) {
         return {
           type: 'failure',
           errors: [{
@@ -227,4 +227,3 @@ import { SeparatedReader } from "./readers/SeparatedReader";
 import { WrappedReader } from "./readers/WrappedReader";
 import { LabelArgument, ResultMapReader } from "./readers/ResultMapReader";
 import { DelegatingReader } from "./readers/DelegatingReader";
-

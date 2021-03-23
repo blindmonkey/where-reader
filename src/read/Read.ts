@@ -1,6 +1,5 @@
 import { Reader } from "./Reader";
 import { DelegatingReader } from "./readers/DelegatingReader";
-import { NextCharReader } from "./readers/NextCharReader";
 import { RegexCharReader } from "./readers/RegexCharReader";
 import { SeqReader } from "./readers/SeqReader";
 import { ReadFailure, ReadResult, ReadToken } from "./ReadResult";
@@ -36,8 +35,37 @@ export class Read {
       }), label);
   }
 
-  static nextChar(): NextCharReader {
-    return new NextCharReader();
+  static empty(): Reader<null> {
+    return new DelegatingReader((str, index) => ({
+      type: 'token',
+      value: null,
+      position: index,
+      length: 0,
+      next: index,
+      errors: []
+    }), '<empty>');
+  }
+
+  static nextChar(): Reader<string> {
+    const label = '<any char>';
+    return Read.empty()
+      .failWhen((_, str, index) => index >= str.length)
+      .mapFailure((_1, _2, index) => ({
+        type: 'failure',
+        errors: [{
+          expected: label,
+          position: index,
+          context: []
+        }]
+      }))
+      .flatMap((_, str, index) => ({
+        type: 'token',
+        value: str[index],
+        position: index,
+        length: 1,
+        next: index + 1,
+        errors: []
+      }), label);
   }
 
   /**
