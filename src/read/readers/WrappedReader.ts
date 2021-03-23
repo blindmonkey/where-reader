@@ -22,15 +22,18 @@ export class WrappedReader<T, Wrapper> extends AbstractReader<T> {
   read(str: string, index: number): ReadResult<T> {
     const reader = this.wrapper.then(this.reader.then(this.wrapper));
     const result = reader.read(str, index);
-    if (result.type === 'failure') return result;
-    const token = result.value[1].value[0]
-    return {
-      type: 'token',
-      value: token.value,
-      position: token.position,
-      length: token.length,
-      next: result.next,
-      errors: result.errors
-    };
+    switch (result.type) {
+      case 'failure': return result;
+      case 'token':
+        const token = result.value[1].value[0]
+        return {
+          type: 'token',
+          value: token.value,
+          position: token.position,
+          length: token.length,
+          next: result.next,
+          errors: result.errors
+        };
+    }
   }
 }
