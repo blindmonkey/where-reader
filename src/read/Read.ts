@@ -114,8 +114,18 @@ export class Read {
    * @returns A reader which succeeds when the next character matches the given
    * regular expression.
    */
-  static regexChar(regex: RegExp): RegexCharReader {
-    return new RegexCharReader(regex);
+  static regexChar(regex: RegExp): Reader<string> {
+    const label = `${regex}`;
+    return Read.nextChar()
+      .failWhen(char => !regex.test(char))
+      .mapFailure((_1, _2, index) => ({
+        type: 'failure',
+        errors: [{
+          expected: label,
+          position: index,
+          context: []
+        }]
+      }));
   }
 
   /**
@@ -124,26 +134,16 @@ export class Read {
    */
   static eof(): Reader<null> {
     const label = '<EOF>';
-    return new DelegatingReader<null>((str, index) => {
-      if (index >= str.length) {
-        return {
-          type: 'token',
-          value: null,
-          position: index,
-          length: 0,
-          next: index,
-          errors: []
-        };
-      }
-      return {
+    return Read.empty()
+      .failWhen((_, str, index) => index < str.length)
+      .mapFailure((_, _str, index) => ({
         type: 'failure',
         errors: [{
           expected: label,
           position: index,
           context: []
         }]
-      };
-    }, label);
+      }), label);
   }
 
   static fail<T>(f: (str: string, index: number) => ReadFailure): Reader<T> {
