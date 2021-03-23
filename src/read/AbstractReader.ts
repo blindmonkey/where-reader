@@ -80,7 +80,6 @@ export abstract class AbstractReader<T> implements Reader<T> {
     }, () => `${this.label} ${next.label}`);
   }
   repeated(): Reader<ReadToken<T>[]> {
-    // return new RepeatReader(this);
     return new DelegatingReader((str, index) => {
       const tokens: ReadToken<T>[] = [];
       let i = index;
@@ -103,11 +102,20 @@ export abstract class AbstractReader<T> implements Reader<T> {
         next: lastToken == null ? index : lastToken.next,
         errors: failure.errors
       };
-
     }, () => `[...${this.label}]`);
   }
-  separatedBy<Sep>(sep: Reader<Sep>): SeparatedReader<T, Sep> {
-    return new SeparatedReader(this, sep);
+  separatedBy<Sep>(sep: Reader<Sep>): Reader<ReadToken<T>[]> {
+    return this
+      .then(sep.then(this).repeated())
+      .map(tokens => [tokens[0]].concat(tokens[1].value.map((token) => token.value[1])))
+      .mapFailure((failure, _, index) => ({
+        type: 'token',
+        value: [],
+        position: index,
+        length: 0,
+        next: index,
+        errors: failure.errors
+      }), () => `[${this.label} separated by ${sep.label}]`);
   }
   between<Left, Right>(left: Reader<Left>, right: Reader<Right>): Reader<T> {
     return left.then(this).then(right)
@@ -223,7 +231,6 @@ export abstract class AbstractReader<T> implements Reader<T> {
 // These imports must come at the end, otherwise, AbstractReader is undefined
 // when the subclasses try to inherit from it.
 import { LabelOptions } from "./readers/LabelOptions";
-import { SeparatedReader } from "./readers/SeparatedReader";
 import { WrappedReader } from "./readers/WrappedReader";
 import { LabelArgument, ResultMapReader } from "./readers/ResultMapReader";
 import { DelegatingReader } from "./readers/DelegatingReader";
