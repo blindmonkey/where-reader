@@ -5,7 +5,6 @@ export abstract class AbstractReader<T> implements Reader<T> {
   abstract label: string;
   abstract read(str: string, index: number): ReadResult<T>;
   or<Other>(other: Reader<Other>): Reader<T | Other> {
-    // return new EitherReader(this, other);
     return this.mapResult<T | Other>((leftValue, str, index) => {
       switch (leftValue.type) {
         case 'token':
@@ -58,26 +57,8 @@ export abstract class AbstractReader<T> implements Reader<T> {
       errors: token.errors
     }), label);
   }
-  then<Next>(next: Reader<Next>): Reader<[ReadToken<T>, ReadToken<Next>]> {
-    return this.flatMap((a, str, index) => {
-      const b = next.read(str, a.next);
-      switch (b.type) {
-        case 'failure':
-          return <ReadFailure>{
-            type: 'failure',
-            errors: a.errors.concat(b.errors)
-          };
-        case 'token':
-          return {
-            type: 'token',
-            value: [a, b],
-            position: index,
-            length: b.next - index,
-            next: b.next,
-            errors: a.errors.concat(b.errors)
-          };
-      }
-    }, () => `${this.label} ${next.label}`);
+  then<Next extends Reader<unknown>[]>(...next: Next): Reader<MapReadToken<[T, ...MapReadType<Next>]>> {
+    return SeqReader.make(this, ...next);
   }
   repeated(): Reader<ReadToken<T>[]> {
     return new DelegatingReader((str, index) => {
@@ -118,8 +99,8 @@ export abstract class AbstractReader<T> implements Reader<T> {
       }), () => `[${this.label} separated by ${sep.label}]`);
   }
   between<Left, Right>(left: Reader<Left>, right: Reader<Right>): Reader<T> {
-    return left.then(this).then(right)
-      .map<ReadToken<T>>(tokens => tokens[0].value[1])
+    return left.then(this, right)
+      .map<ReadToken<T>>(tokens => tokens[1])
       .flatMap<T>(token => ({
         type: 'token',
         value: token.value.value,
@@ -234,3 +215,6 @@ import { LabelOptions } from "./readers/LabelOptions";
 import { WrappedReader } from "./readers/WrappedReader";
 import { LabelArgument, ResultMapReader } from "./readers/ResultMapReader";
 import { DelegatingReader } from "./readers/DelegatingReader";
+import { SeqReader } from "./readers/SeqReader";
+import { MapReader, MapReadToken, MapReadType } from "./Types";
+

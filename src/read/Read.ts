@@ -1,6 +1,5 @@
 import { Reader } from "./Reader";
 import { DelegatingReader } from "./readers/DelegatingReader";
-import { RegexCharReader } from "./readers/RegexCharReader";
 import { SeqReader } from "./readers/SeqReader";
 import { ReadFailure, ReadResult, ReadToken } from "./ReadResult";
 
@@ -46,6 +45,8 @@ export class Read {
     }), '<empty>');
   }
 
+  public static seq: typeof SeqReader.make = (...readers) => SeqReader.make(...readers);
+
   static nextChar(): Reader<string> {
     const label = '<any char>';
     return Read.empty()
@@ -82,7 +83,7 @@ export class Read {
       readers.push(Read.char(literal[i], caseSensitive));
     }
     const label = `"${literal}"`;
-    const reader = new SeqReader(readers);
+    const reader = Read.seq(...readers);
     return reader
       .mapResult((result, _, index) => {
         if (result.type === 'failure') {

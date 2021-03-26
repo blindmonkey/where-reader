@@ -1,6 +1,7 @@
 import { LabelOptions } from "./readers/LabelOptions";
 import { LabelArgument } from "./readers/ResultMapReader";
 import { ReadFailure, ReadResult, ReadToken } from "./ReadResult";
+import { MapReader, MapReadToken, MapReadType } from "./Types";
 
 export interface Reader<T> {
   /**
@@ -47,7 +48,7 @@ export interface Reader<T> {
    * First read `this`, then read `Next`.
    * @param next The reader to attempt next when this one succeeds.
    */
-  then<Next>(next: Reader<Next>): Reader<[ReadToken<T>, ReadToken<Next>]>;
+  then<Next extends Reader<unknown>[]>(...next: Next): Reader<MapReadToken<[T, ...MapReadType<Next>]>>;
 
   /**
    * Repeatedly read `T` via `this` `Reader` until failure.
