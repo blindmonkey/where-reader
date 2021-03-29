@@ -15,9 +15,9 @@ export class DelegatingReader<T> extends AbstractReader<T> {
   constructor();
   constructor(delegate: Reader<T>);
   constructor(delegate: DelegateFn<T>, label: LabelArgument);
-  constructor(delegate?: Reader<T> | ((str: string, index: number) => ReadResult<T>), label?: LabelArgument) {
+  constructor(...args: [] | [Reader<T>] | [DelegateFn<T>, LabelArgument]) {
     super();
-    if (delegate == null) {
+    if (args.length === 0) {
       this.delegate = {
         type: 'function',
         delegate() {
@@ -25,11 +25,11 @@ export class DelegatingReader<T> extends AbstractReader<T> {
         },
         label: 'no delegate'
       };
-    } else if (typeof delegate === 'function') {
-      if (label == null) throw 'A label must be specified with a delegating function';
+    } else if (args.length === 2) {
+      const [delegate, label] = args;
       this.delegate = {type: 'function', delegate, label};
     } else {
-      this.delegate = {type: 'reader', reader: delegate};
+      this.delegate = {type: 'reader', reader: args[0]};
     }
   }
   get label(): string {
@@ -45,19 +45,12 @@ export class DelegatingReader<T> extends AbstractReader<T> {
   }
   setDelegate(delegate: Reader<T>): void;
   setDelegate(delegate: DelegateFn<T>, label: string): void;
-  setDelegate(delegate: Reader<T> | DelegateFn<T>, label?: string) {
-    if (typeof delegate === 'function') {
-      if (label == null) throw 'A label must be specified with a delegating function';
-      this.delegate = {
-        type: 'function',
-        delegate: delegate,
-        label: label
-      };
+  setDelegate(...args: [Reader<T>] | [DelegateFn<T>, LabelArgument]) {
+    if (args.length === 2) {
+      const [delegate, label] = args;
+      this.delegate = { type: 'function', delegate, label };
     } else {
-      this.delegate = {
-        type: 'reader',
-        reader: delegate
-      };
+      this.delegate = { type: 'reader', reader: args[0] };
     }
   }
   read(str: string, index: number): ReadResult<T> {
