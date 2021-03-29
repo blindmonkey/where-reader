@@ -14,11 +14,7 @@ describe('Read.literal', function() {
   });
   it('fails case sensitive (and is default)', function() {
     expect(Read.literal('xyz').read('aXYZ', 1))
-      .to.deep.equal(ReadResult.failure([{
-        expected: '"xyz"',
-        position: 1,
-        context: []
-      }]));
+      .to.deep.equal(ReadResult.failure(ReadResult.error('"xyz"', 1)));
   });
   it('reads case insensitive', function() {
     expect(Read.literal('xyz', false).read('aXYZ', 1))
@@ -30,10 +26,6 @@ describe('Read.literal', function() {
   });
   it('fails case insensitive', function() {
     expect(Read.literal('xyz', false).read('XYZ', 1))
-      .to.deep.equal(ReadResult.failure([{
-        expected: '"xyz"',
-        position: 1,
-        context: []
-      }]));
+      .to.deep.equal(ReadResult.failure(ReadResult.error('"xyz"', 1)));
   });
 });

@@ -17,27 +17,17 @@ describe('FailReader', function() {
         position: 1,
         length: 2,
         next: 3,
-        errors: [{
-          expected: "'y'",
-          position: 3,
-          context: []
-        }]
+        errors: [ReadResult.error("'y'", 3)]
       }));
   });
   it('passes failure through', function() {
     expect(reader.read('zzxy', 1))
-      .to.deep.equal(ReadResult.failure([{
-        expected: "'x'",
-        position: 1,
-        context: []
-      }]));
+      .to.deep.equal(ReadResult.failure(ReadResult.error("'x'", 1)));
   });
   it('fails on condition', function() {
     expect(reader.read('zx', 1))
-      .to.deep.equal(ReadResult.failure([{
-        expected: "'x' [...'y'] fails on condition",
-        position: 1,
-        context: []
-      }]));
+      .to.deep.equal(ReadResult.failure(
+        ReadResult.error(
+          "'x' [...'y'] fails on condition", 1)));
   });
 });

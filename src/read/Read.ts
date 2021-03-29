@@ -24,11 +24,9 @@ export class Read {
     return Read.nextChar()
       .failWhen(value => !compare(value))
       .mapToken(() => expected, label)
-      .mapFailure((_1, _2, index) => ReadResult.failure([{
-        position: index,
-        expected: label,
-        context: []
-      }]), label);
+      .mapFailure(
+        (_1, _2, index) => ReadResult.failure(ReadResult.error(label, index)),
+        label);
   }
 
   static empty(): Reader<null> {
@@ -45,16 +43,12 @@ export class Read {
     const label = '<any char>';
     return Read.empty()
       .failWhen((_, str, index) => index >= str.length)
-      .mapFailure((_1, _2, index) => ReadResult.failure([{
-        expected: label,
-        position: index,
-        context: []
-      }]))
+      .mapFailure((_1, _2, index) =>
+        ReadResult.failure(ReadResult.error(label, index)))
       .flatMap((_, str, index) => ReadResult.token(str[index], {
         position: index,
         length: 1,
-        next: index + 1,
-        errors: []
+        next: index + 1
       }), label);
   }
 
@@ -76,11 +70,7 @@ export class Read {
     return reader
       .mapResult<T>((result, _, index) => {
         if (ReadResult.isFailure(result)) {
-          return ReadResult.failure([{
-            expected: label,
-            position: index,
-            context: []
-          }]);
+          return ReadResult.failure(ReadResult.error(label, index));
         }
         return ReadResult.token(result.value.map(token => token.value).join('') as T, {
           position: result.position,
@@ -102,11 +92,7 @@ export class Read {
     const label = `${regex}`;
     return Read.nextChar()
       .failWhen(char => !regex.test(char))
-      .mapFailure((_1, _2, index) => ReadResult.failure([{
-        expected: label,
-        position: index,
-        context: []
-      }]));
+      .mapFailure((_1, _2, index) => ReadResult.failure(ReadResult.error(label, index)));
   }
 
   /**
@@ -117,11 +103,9 @@ export class Read {
     const label = '<EOF>';
     return Read.empty()
       .failWhen((_, str, index) => index < str.length)
-      .mapFailure((_, _str, index) => ReadResult.failure([{
-        expected: label,
-        position: index,
-        context: []
-      }]), label);
+      .mapFailure(
+        (_, _str, index) => ReadResult.failure(ReadResult.error(label, index)),
+        label);
   }
 
   static fail<T>(f: (str: string, index: number) => ReadFailure): Reader<T> {

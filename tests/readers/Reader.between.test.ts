@@ -19,26 +19,14 @@ describe('Reader.between', function() {
   })
   it('fails on left fail', function() {
     expect(reader.read(str, 2))
-      .to.be.deep.equal(ReadResult.failure([{
-        expected: "'('",
-        position: 2,
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'('", 2)));
   });
   it('fails on middle fail', function() {
     expect(reader.read(str, 1))
-      .to.be.deep.equal(ReadResult.failure([{
-        expected: "'x'",
-        position: 2,
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'x'", 2)));
   });
   it('fails on right fail', function() {
     expect(reader.read(str, 7))
-      .to.be.deep.equal(ReadResult.failure([{
-        expected: "')'",
-        position: 9,
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(ReadResult.error("')'", 9)));
   });
 });

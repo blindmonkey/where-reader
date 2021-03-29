@@ -22,10 +22,6 @@ describe('EOFReader', function() {
   });
   it('fails when there is more to read', function() {
     expect(Read.eof().read('abc', 0))
-      .to.be.deep.equal(ReadResult.failure([{
-        expected: '<EOF>',
-        position: 0,
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(ReadResult.error('<EOF>', 0)));
   });
 });

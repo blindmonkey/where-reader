@@ -24,11 +24,7 @@ describe('Reader.separatedBy', function() {
         position: 1,
         length: 0,
         next: 2,
-        errors: [{
-          expected: '<identifier>',
-          position: 1,
-          context: []
-        }]
+        errors: [ReadResult.error('<identifier>', 1)]
       }));
   });
 
@@ -44,11 +40,7 @@ describe('Reader.separatedBy', function() {
         position: 1,
         length: 3,
         next: 5,
-        errors: [{
-          expected: "','",
-          position: 4,
-          context: []
-        }]
+        errors: [ReadResult.error("','", 4)]
       }));
   });
   it('reads many', function() {
@@ -73,37 +65,21 @@ describe('Reader.separatedBy', function() {
         position: 1,
         length: 5,
         next: 7,
-        errors: [{
-          expected: "','",
-          position: 6,
-          context: []
-        }]
+        errors: [ReadResult.error("','", 6)]
       }));
   });
 
   it('fails when starting with separator', function() {
     expect(reader.read('(,abc)', 0))
-      .to.be.deep.equal(ReadResult.failure([{
-        expected: '<identifier>',
-        position: 1,
-        context: []
-      }, {
-        expected: "')'",
-        position: 1,
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(
+        ReadResult.error('<identifier>', 1),
+        ReadResult.error("')'", 1)));
   })
 
   it('fails when ending with separator', function() {
     expect(reader.read('(abc,)', 0))
-      .to.be.deep.equal(ReadResult.failure([{
-        expected: '<identifier>',
-        position: 5,
-        context: []
-      }, {
-        expected: "')'",
-        position: 4,
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(
+        ReadResult.error('<identifier>', 5),
+        ReadResult.error("')'", 4)));
   })
 });

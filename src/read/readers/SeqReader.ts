@@ -39,7 +39,7 @@ export class SeqReader<T extends unknown[]> extends AbstractReader<MapReadToken<
       const reader = this.readers[r];
       const result = reader.read(str, i);
       if (ReadResult.isFailure(result)) {
-        return ReadResult.failure(tokens.flatMap(t => t.errors).concat(result.errors));
+        return ReadResult.failure(...tokens.flatMap(t => t.errors).concat(result.errors));
       }
       tokens.push(result);
       i = result.next;

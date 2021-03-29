@@ -10,35 +10,21 @@ describe('Reader.labeled', function() {
   const recontext = base.labeled('token x', {context: true});
   it('default behavior', function() {
     expect(base.labeled('token x').read('z', 0))
-      .to.deep.equal(ReadResult.failure([{
-        expected: "'x'",
-        position: 0,
-        context: [{label: 'token x', position: 0}]
-      }]));
+      .to.deep.equal(ReadResult.failure(ReadResult.error(
+        "'x'", 0, [{label: 'token x', position: 0}])));
   });
   it('relabels failure', function() {
     expect(relabel.read('z', 0))
-      .to.deep.equal(ReadResult.failure([{
-        expected: 'token x',
-        position: 0,
-        context: []
-      }]));
+      .to.deep.equal(ReadResult.failure(ReadResult.error('token x', 0)));
   });
   it('adds context to failures', function() {
     expect(recontext.read('z', 0))
-      .to.deep.equal(ReadResult.failure([{
-        expected: "'x'",
-        position: 0,
-        context: [{label: 'token x', position: 0}]
-      }]));
+      .to.deep.equal(ReadResult.failure(ReadResult.error(
+        "'x'", 0, [{label: 'token x', position: 0}])));
   });
   it('does nothing to failures with no options', function() {
     expect(reader.read('z', 0))
-      .to.deep.equal(ReadResult.failure([{
-        expected: "'x'",
-        position: 0,
-        context: []
-      }]));
+      .to.deep.equal(ReadResult.failure(ReadResult.error("'x'", 0)));
   });
   it('relabels success', function() {
     expect(relabel.read('x', 0))
@@ -50,20 +36,12 @@ describe('Reader.labeled', function() {
         position: 1,
         length: 0,
         next: 1,
-        errors: [{
-          expected: "'y'",
-          position: 1,
-          context: []
-        }]
+        errors: [ReadResult.error("'y'", 1)]
       })], {
         position: 0,
         length: 1,
         next: 1,
-        errors: [{
-          expected: 'token x',
-          position: 0,
-          context: []
-        }]
+        errors: [ReadResult.error('token x', 0)]
       }));
   });
   it('adds context to successes', function() {
@@ -78,21 +56,14 @@ describe('Reader.labeled', function() {
           position: 1,
           length: 0,
           next: 1,
-          errors: [{
-            expected: "'y'",
-            position: 1,
-            context: []
-          }]
+          errors: [ReadResult.error("'y'", 1)]
         })
       ], {
         position: 0,
         length: 1,
         next: 1,
-        errors: [{
-          expected: "'y'",
-          position: 1,
-          context: [{ label: 'token x', position: 0 }]
-        }]
+        errors: [ReadResult.error(
+          "'y'", 1, [{ label: 'token x', position: 0 }])]
       }));
   });
   it('does nothing to successes with no options', function() {
@@ -107,21 +78,13 @@ describe('Reader.labeled', function() {
           position: 1,
           length: 0,
           next: 1,
-          errors: [{
-            expected: "'y'",
-            position: 1,
-            context: []
-          }]
+          errors: [ReadResult.error("'y'", 1)]
         })
       ], {
         position: 0,
         length: 1,
         next: 1,
-        errors: [{
-          expected: "'y'",
-          position: 1,
-          context: []
-        }]
+        errors: [ReadResult.error("'y'", 1)]
       }));
   });
 });

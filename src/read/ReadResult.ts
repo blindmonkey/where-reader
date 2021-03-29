@@ -23,10 +23,14 @@ export interface ReadToken<T> {
   errors: ReadError[];
 }
 
+export interface ReadContext {
+  position: number;
+  label: string;
+}
 export interface ReadError {
   position: number;
   expected: string;
-  context: {position: number, label: string}[];
+  context: ReadContext[];
 }
 export interface ReadFailure {
   type: Symbols['failure'];
@@ -46,11 +50,18 @@ export namespace ReadResult {
       errors: position.errors ?? []
     };
   }
-  export function failure(errors: ReadError[] = []): ReadFailure {
+  export function failure(...errors: ReadError[]): ReadFailure {
     return {
       type: Symbols.failure,
       errors: errors
     };
+  }
+  export function error(expected: string, position: number, context: ReadContext[] = []): ReadError {
+    return {
+      expected: expected,
+      position: position,
+      context: context
+    }
   }
   export function isSuccess<T>(result: ReadResult<T>): result is ReadToken<T> {
     return result.type === Symbols.token;

@@ -26,14 +26,8 @@ describe('Reader.or', function() {
   });
   it('fails when both Left and Right fail', function() {
     expect(reader.read('xc', 1))
-      .to.be.deep.equal(ReadResult.failure([{
-        expected: "'a'",
-        position: 1,
-        context: []
-      }, {
-        expected: "'b'",
-        position: 1,
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(
+        ReadResult.error("'a'", 1),
+        ReadResult.error("'b'", 1)));
   });
 });

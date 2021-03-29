@@ -29,18 +29,10 @@ describe('Reader.then', function() {
   });
   it('fails when first fails', function() {
     expect(reader.read('abcayz', 3))
-      .to.be.deep.equal(ReadResult.failure([{
-        expected: "'x'",
-        position: 3,
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'x'", 3)));
   });
   it('fails when second fails', function() {
     expect(reader.read('abcxaz', 3))
-      .to.be.deep.equal(ReadResult.failure([{
-        expected: "'y'",
-        position: 4,
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'y'", 4)));
   });
 });

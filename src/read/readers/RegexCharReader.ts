@@ -14,25 +14,16 @@ export class RegexCharReader extends AbstractReader<string> {
   }
   read(str: string, index: number): ReadResult<string> {
     if (index >= str.length) {
-      return ReadResult.failure([{
-        expected: this.label,
-        position: index,
-        context: []
-      }]);
+      return ReadResult.failure(ReadResult.error(this.label, index));
     }
     const char = str[index];
     if (!this.regex.test(char)) {
-      return ReadResult.failure([{
-        expected: this.label,
-        position: index,
-        context: []
-      }]);
+      return ReadResult.failure(ReadResult.error(this.label, index));
     }
     return ReadResult.token(char, {
       position: index,
       length: 1,
-      next: index + 1,
-      errors: []
+      next: index + 1
     });
   }
 }

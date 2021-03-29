@@ -20,10 +20,6 @@ describe('Read.nextChar', function() {
   });
   it('fails on eof', function() {
     expect(reader.read('xyz', 3))
-      .to.deep.equal(ReadResult.failure([{
-        expected: '<any char>',
-        position: 3,
-        context: []
-      }]));
+      .to.deep.equal(ReadResult.failure(ReadResult.error('<any char>', 3)));
   });
 });

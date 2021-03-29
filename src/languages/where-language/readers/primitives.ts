@@ -46,11 +46,11 @@ export const string: Reader<StringLiteral> =
     .then(
       Read.char('n').map(() => '\n')
       .or(Read.char('\\').map(() => '\\'))
-      .or(Read.fail((s, i) => ReadResult.failure([{
+      .or(Read.fail((s, i) => ReadResult.failure({
         expected: i < s.length ? `Unsupported character following string escape: ${s[i]}` : 'Unexpected EOF',
         position: i,
         context: []
-      }]))))
+      }))))
     .or(Read.nextChar().failWhen(c => c === '"'))
     .repeated()
     .wrappedBy(Read.char('"'))

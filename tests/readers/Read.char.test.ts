@@ -11,35 +11,19 @@ describe('CharReader', function() {
   });
   it('fails on end of string', function() {
     expect(Read.char('x').read('x', 1))
-      .to.be.deep.equal(ReadResult.failure([{
-        position: 1,
-        expected: "'x'",
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'x'", 1)));
   });
   it('fails on incorrect character (case sensitive)', function() {
     expect(Read.char('x', true).read('y', 0))
-      .to.be.deep.equal(ReadResult.failure([{
-        position: 0,
-        expected: "'x'",
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'x'", 0)));
   });
   it('fails on incorrect case', function() {
     expect(Read.char('x', true).read('X', 0))
-      .to.be.deep.equal(ReadResult.failure([{
-        position: 0,
-        expected: "'x'",
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'x'", 0)));
   });
   it('fails on incorrect character (case insensitive)', function() {
     expect(Read.char('x', false).read('y', 0))
-      .to.be.deep.equal(ReadResult.failure([{
-        position: 0,
-        expected: "'x'",
-        context: []
-      }]));
+      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'x'", 0)));
   });
   it('succeeds on correct character (case sensitive)', function() {
     expect(Read.char('c', true).read('abc', 2))

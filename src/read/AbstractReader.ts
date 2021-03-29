@@ -12,7 +12,7 @@ export abstract class AbstractReader<T> implements Reader<T> {
         leftValue => ReadResult.flatMap(
           other.read(str, index),
           token => token,
-          failure => ReadResult.failure(leftValue.errors.concat(failure.errors)))
+          failure => ReadResult.failure(...leftValue.errors.concat(failure.errors)))
       ), () => `${this.label} | ${other.label}`);
   }
   map<Output>(f: (input: T) => Output, label?: LabelArgument): Reader<Output> {
@@ -116,7 +116,7 @@ export abstract class AbstractReader<T> implements Reader<T> {
     return this.mapResult((result, _, index) => {
       switch (result.type) {
         case Symbols.failure:
-          return ReadResult.failure(modifyErrors(result.errors, index));
+          return ReadResult.failure(...modifyErrors(result.errors, index));
         case Symbols.token:
           return ReadResult.token(result.value, {
             position: result.position,
@@ -131,11 +131,7 @@ export abstract class AbstractReader<T> implements Reader<T> {
     const label = () => `${this.label} fails on condition`;
     return this.flatMap<T>((result, str, index) => {
       if (condition(result.value, str, index)) {
-        return ReadResult.failure([{
-            expected: label(),
-            position: index,
-            context: []
-          }]);
+        return ReadResult.failure(ReadResult.error(label(), index));
       }
       return result;
     }, label);
