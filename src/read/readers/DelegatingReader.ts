@@ -11,7 +11,6 @@ export type DelegateFn<T> = (str: string, index: number) => ReadResult<T>;
  * feature of modern languages, especially at the expression level.
  */
 export class DelegatingReader<T> extends AbstractReader<T> {
-  // label_?: string;
   private delegate: {type: 'reader', reader: Reader<T>} | {type: 'function', delegate: DelegateFn<T>, label: LabelArgument};
   constructor();
   constructor(delegate: Reader<T>);

@@ -1,7 +1,7 @@
 import { LabelOptions } from "./readers/LabelOptions";
 import { LabelArgument } from "./readers/ResultMapReader";
 import { ReadFailure, ReadResult, ReadToken } from "./ReadResult";
-import { MapReader, MapReadToken, MapReadType } from "./Types";
+import { MapReadToken, MapReadType } from "./Types";
 
 export interface Reader<T> {
   /**

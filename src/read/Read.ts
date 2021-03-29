@@ -1,7 +1,7 @@
 import { Reader } from "./Reader";
 import { DelegatingReader } from "./readers/DelegatingReader";
 import { SeqReader } from "./readers/SeqReader";
-import { ReadFailure, ReadResult, ReadToken } from "./ReadResult";
+import { ReadFailure, ReadResult } from "./ReadResult";
 
 export class Read {
   /**

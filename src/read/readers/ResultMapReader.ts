@@ -1,6 +1,6 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
-import { ReadResult, ReadToken } from "../ReadResult";
+import { ReadResult } from "../ReadResult";
 
 export type LabelArgument = string | (() => string);
 

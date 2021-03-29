@@ -1,5 +1,4 @@
 import { AbstractReader } from "../AbstractReader";
-import { Read } from "../Read";
 import { Reader } from "../Reader";
 import { ReadResult, ReadToken } from "../ReadResult";
 import { MapReader, MapReadToken, MapReadType } from "../Types";
@@ -32,7 +31,9 @@ export class SeqReader<T extends unknown[]> extends AbstractReader<MapReadToken<
       const reader = this.readers[r];
       const result = reader.read(str, i);
       if (ReadResult.isFailure(result)) {
-        return ReadResult.failure(...tokens.flatMap(t => t.errors).concat(result.errors));
+        return ReadResult.failure(
+          ...tokens.flatMap(t => t.errors),
+          ...result.errors);
       }
       tokens.push(result);
       i = result.next;
