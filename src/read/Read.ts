@@ -68,17 +68,19 @@ export class Read {
     const label = `"${literal}"`;
     const reader = Read.seq(...readers);
     return reader
-      .mapResult<T>((result, _, index) => {
-        if (ReadResult.isFailure(result)) {
-          return ReadResult.failure(ReadResult.error(label, index));
-        }
-        return ReadResult.token(result.value.map(token => token.value).join('') as T, {
-          position: result.position,
-          length: result.length,
-          next: result.next,
-          errors: []
-        });
-      }, label);
+      .mapResult<T>((result, _, index) =>
+        ReadResult.flatMap(
+          result,
+          result =>
+            ReadResult.token(
+              result.value.map(token => token.value).join('') as T, {
+                position: result.position,
+                length: result.length,
+                next: result.next,
+                errors: []
+              }),
+            _ => ReadResult.failure(ReadResult.error(label, index))),
+        label);
   }
 
   /**
@@ -108,7 +110,15 @@ export class Read {
         label);
   }
 
-  static fail<T>(f: (str: string, index: number) => ReadFailure): Reader<T> {
-    return new DelegatingReader(f, '<fail>');
+  static fail(expected: string): Reader<never>;
+  static fail(f: (str: string, index: number) => ReadFailure): Reader<never>;
+  static fail(f: string | ((str: string, index: number) => ReadFailure)): Reader<never> {
+    const label = '<fail>';
+    if (typeof f === 'string') {
+      return new DelegatingReader(
+        (_, position) => ReadResult.failure(ReadResult.error(f, position)),
+        label);
+    }
+    return new DelegatingReader(f, label);
   }
 }

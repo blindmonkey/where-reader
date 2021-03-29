@@ -4,6 +4,14 @@ import { Read } from '../../src/read/Read';
 import { ReadResult } from '../../src/read/ReadResult';
 
 describe('Read.literal', function() {
+  it('reads empty string', function() {
+    expect(Read.literal('').read('axyz', 1))
+      .to.deep.equal(ReadResult.token('', {
+        position: 1,
+        length: 0,
+        next: 1
+      }));
+  });
   it('reads case sensitive', function() {
     expect(Read.literal('xyz', true).read('axyz', 1))
       .to.deep.equal(ReadResult.token('xyz', {

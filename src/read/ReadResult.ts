@@ -1,15 +1,13 @@
-import { Reader } from "./Reader";
-
 const tokenSymbol: unique symbol = Symbol('token');
 const failureSymbol: unique symbol = Symbol('failure');
 
 type TokenSymbol = typeof tokenSymbol;
 type FailureSymbol = typeof failureSymbol;
-export type Symbols = {
+type Symbols = {
   token: TokenSymbol,
   failure: FailureSymbol
 };
-export const Symbols: Symbols = {
+const Symbols: Symbols = {
   token: tokenSymbol,
   failure: failureSymbol
 };

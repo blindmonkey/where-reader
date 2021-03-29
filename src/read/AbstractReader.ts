@@ -1,5 +1,5 @@
 import { Reader } from "./Reader";
-import { ReadError, ReadFailure, ReadResult, ReadToken, Symbols } from "./ReadResult";
+import { ReadError, ReadFailure, ReadResult, ReadToken } from "./ReadResult";
 
 export abstract class AbstractReader<T> implements Reader<T> {
   abstract label: string;
@@ -30,12 +30,12 @@ export abstract class AbstractReader<T> implements Reader<T> {
       label);
   }
   mapFailure(f: (failure: ReadFailure, str: string, position: number) => ReadResult<T>, label?: LabelArgument): Reader<T> {
-    return this.mapResult((result, str, position) => {
-      switch (result.type) {
-        case Symbols.failure: return f(result, str, position);
-        case Symbols.token: return result;
-      }
-    }, label);
+    return this.mapResult((result, str, position) =>
+      ReadResult.flatMap(
+        result,
+        token => token,
+        failure => f(failure, str, position)),
+      label);
   }
   mapToken<Output>(f: (token: ReadToken<T>, str: string, position: number) => Output, label?: LabelArgument): Reader<Output> {
     return this.flatMap((token, str, position) => ReadResult.token(f(token, str, position), {
@@ -92,8 +92,8 @@ export abstract class AbstractReader<T> implements Reader<T> {
         errors: token.errors
       }));
   }
-  wrappedBy<Wrapper>(wrapper: Reader<Wrapper>): WrappedReader<T, Wrapper> {
-    return new WrappedReader(this, wrapper);
+  wrappedBy<Wrapper>(wrapper: Reader<Wrapper>): Reader<T> {
+    return this.between(wrapper, wrapper);
   }
   labeled(label: string, options: LabelOptions = {}): Reader<T> {
     function modifyErrors(errors: ReadError[], index: number): ReadError[] {
@@ -113,19 +113,17 @@ export abstract class AbstractReader<T> implements Reader<T> {
         return errors;
       }
     }
-    return this.mapResult((result, _, index) => {
-      switch (result.type) {
-        case Symbols.failure:
-          return ReadResult.failure(...modifyErrors(result.errors, index));
-        case Symbols.token:
-          return ReadResult.token(result.value, {
-            position: result.position,
-            length: result.length,
-            next: result.next,
-            errors: modifyErrors(result.errors, index)
-          });
-      }
-    }, label);
+    return this.mapResult((result, _, index) =>
+      ReadResult.flatMap(
+        result,
+        token => ReadResult.token(token.value, {
+          position: token.position,
+          length: token.length,
+          next: token.next,
+          errors: modifyErrors(token.errors, index)
+        }),
+        failure => ReadResult.failure(...modifyErrors(failure.errors, index))),
+      label);
   }
   failWhen(condition: (value: T, str: string, index: number) => boolean): Reader<T> {
     const label = () => `${this.label} fails on condition`;
@@ -149,19 +147,17 @@ export abstract class AbstractReader<T> implements Reader<T> {
       });
   }
   optional(): Reader<T | null> {
-    return this.mapResult<T | null>((result, _, index) => {
-      switch (result.type) {
-        case Symbols.failure:
-          return ReadResult.token(null, {
-            position: index,
-            next: index,
-            length: 0,
-            errors: result.errors
-          });
-        case Symbols.token:
-          return result;
-      }
-    }, () => `[${this.label}]`);
+    return this.mapResult<T | null>((result, _, index) =>
+      ReadResult.flatMap(
+        result,
+        token => token,
+        failure => ReadResult.token(null, {
+          position: index,
+          next: index,
+          length: 0,
+          errors: failure.errors
+        })),
+      () => `[${this.label}]`);
   }
   ignoringSuccessFailures(): Reader<T> {
     return this.flatMap(result => ReadResult.token(result.value, {
@@ -175,9 +171,8 @@ export abstract class AbstractReader<T> implements Reader<T> {
 // These imports must come at the end, otherwise, AbstractReader is undefined
 // when the subclasses try to inherit from it.
 import { LabelOptions } from "./readers/LabelOptions";
-import { WrappedReader } from "./readers/WrappedReader";
 import { LabelArgument, ResultMapReader } from "./readers/ResultMapReader";
 import { DelegatingReader } from "./readers/DelegatingReader";
 import { SeqReader } from "./readers/SeqReader";
-import { MapReader, MapReadToken, MapReadType } from "./Types";
+import { MapReadToken, MapReadType } from "./Types";
 
