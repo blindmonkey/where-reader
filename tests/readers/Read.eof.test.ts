@@ -1,9 +1,10 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
+
 import { Read } from '../../src/read/Read';
 import { ReadResult } from '../../src/read/ReadResult';
 
-describe('EOFReader', function() {
+describe('Read.eof', function() {
   it('succeeds on exact end of string', function() {
     expect(Read.eof().read('', 0))
       .to.be.deep.equal(ReadResult.token(null, {

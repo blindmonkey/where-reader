@@ -1,9 +1,10 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
+
 import { Read } from '../../src/read/Read';
 import { ReadResult } from '../../src/read/ReadResult';
 
-describe('FailReader', function() {
+describe('Reader.failWhen', function() {
   const reader = Read.char('x')
     .then(Read.char('y').repeated())
     .map(tokens => tokens[0].value + tokens[1].value.map(v => v.value).join(''))
