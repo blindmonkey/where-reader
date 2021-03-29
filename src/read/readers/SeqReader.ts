@@ -1,6 +1,7 @@
 import { AbstractReader } from "../AbstractReader";
+import { Read } from "../Read";
 import { Reader } from "../Reader";
-import { ReadError, ReadResult, ReadToken } from "../ReadResult";
+import { ReadResult, ReadToken } from "../ReadResult";
 import { MapReader, MapReadToken, MapReadType } from "../Types";
 
 
@@ -26,37 +27,29 @@ export class SeqReader<T extends unknown[]> extends AbstractReader<MapReadToken<
   }
   read(str: string, index: number): ReadResult<MapReadToken<T>> {
     if (this.readers.length === 0) {
-      return {
-        type: 'token',
-        value: [] as any,
+      return ReadResult.token<any>([], {
         position: index,
         length: 0,
-        next: index,
-        errors: []
-      };
+        next: index
+      });
     }
     const tokens: ReadToken<unknown>[] = [];
     let i = index;
     for (let r = 0; r < this.readers.length; r++) {
       const reader = this.readers[r];
       const result = reader.read(str, i);
-      if (result.type === 'failure') {
-        return {
-          type: 'failure',
-          errors: tokens.flatMap(t => t.errors).concat(result.errors)
-        };
+      if (ReadResult.isFailure(result)) {
+        return ReadResult.failure(tokens.flatMap(t => t.errors).concat(result.errors));
       }
       tokens.push(result);
       i = result.next;
     }
     const lastToken = tokens[tokens.length - 1];
-    return {
-      type: 'token',
-      value: tokens as any,
+    return ReadResult.token<any>(tokens, {
       position: index,
       length: lastToken == null ? 0 : lastToken.position + lastToken.length - index,
       next: lastToken == null ? index : lastToken.next,
       errors: tokens.flatMap(t => t.errors)
-    };
+    });
   }
 }

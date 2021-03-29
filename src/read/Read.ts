@@ -24,24 +24,18 @@ export class Read {
     return Read.nextChar()
       .failWhen(value => !compare(value))
       .mapToken(() => expected, label)
-      .mapFailure((_1, _2, index) => ({
-        type: 'failure',
-        errors: [{
-          position: index,
-          expected: label,
-          context: []
-        }]
-      }), label);
+      .mapFailure((_1, _2, index) => ReadResult.failure([{
+        position: index,
+        expected: label,
+        context: []
+      }]), label);
   }
 
   static empty(): Reader<null> {
-    return new DelegatingReader((str, index) => ({
-      type: 'token',
-      value: null,
+    return new DelegatingReader((str, index) => ReadResult.token(null, {
       position: index,
       length: 0,
-      next: index,
-      errors: []
+      next: index
     }), '<empty>');
   }
 
@@ -51,17 +45,12 @@ export class Read {
     const label = '<any char>';
     return Read.empty()
       .failWhen((_, str, index) => index >= str.length)
-      .mapFailure((_1, _2, index) => ({
-        type: 'failure',
-        errors: [{
-          expected: label,
-          position: index,
-          context: []
-        }]
-      }))
-      .flatMap((_, str, index) => ({
-        type: 'token',
-        value: str[index],
+      .mapFailure((_1, _2, index) => ReadResult.failure([{
+        expected: label,
+        position: index,
+        context: []
+      }]))
+      .flatMap((_, str, index) => ReadResult.token(str[index], {
         position: index,
         length: 1,
         next: index + 1,
@@ -85,26 +74,20 @@ export class Read {
     const label = `"${literal}"`;
     const reader = Read.seq(...readers);
     return reader
-      .mapResult((result, _, index) => {
-        if (result.type === 'failure') {
-          const failure: ReadFailure = {
-            type: 'failure',
-            errors: [{
-              expected: label,
-              position: index,
-              context: []
-            }]
-          };
-          return failure;
+      .mapResult<T>((result, _, index) => {
+        if (ReadResult.isFailure(result)) {
+          return ReadResult.failure([{
+            expected: label,
+            position: index,
+            context: []
+          }]);
         }
-        return {
-          type: 'token',
-          value: result.value.map(token => token.value).join('') as T,
+        return ReadResult.token(result.value.map(token => token.value).join('') as T, {
           position: result.position,
           length: result.length,
           next: result.next,
           errors: []
-        };
+        });
       }, label);
   }
 
@@ -119,14 +102,11 @@ export class Read {
     const label = `${regex}`;
     return Read.nextChar()
       .failWhen(char => !regex.test(char))
-      .mapFailure((_1, _2, index) => ({
-        type: 'failure',
-        errors: [{
-          expected: label,
-          position: index,
-          context: []
-        }]
-      }));
+      .mapFailure((_1, _2, index) => ReadResult.failure([{
+        expected: label,
+        position: index,
+        context: []
+      }]));
   }
 
   /**
@@ -137,14 +117,11 @@ export class Read {
     const label = '<EOF>';
     return Read.empty()
       .failWhen((_, str, index) => index < str.length)
-      .mapFailure((_, _str, index) => ({
-        type: 'failure',
-        errors: [{
-          expected: label,
-          position: index,
-          context: []
-        }]
-      }), label);
+      .mapFailure((_, _str, index) => ReadResult.failure([{
+        expected: label,
+        position: index,
+        context: []
+      }]), label);
   }
 
   static fail<T>(f: (str: string, index: number) => ReadFailure): Reader<T> {

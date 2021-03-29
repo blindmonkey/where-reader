@@ -1,3 +1,4 @@
+import { ReadResult } from "src/read/ReadResult";
 import { expr } from "./readers/expression";
 import { BExpr, EqualityOperator, isEqualityOperator, isMathOperator, MathOperator } from "./tokens";
 
@@ -98,7 +99,7 @@ function compileExpression(expr: BExpr, context: CompilationContext): {id: strin
 
 export function compile(expression: string): string {
   const parsed = expr.read(expression, 0);
-  if (parsed.type === 'failure') throw 'Parse error';
+  if (ReadResult.isFailure(parsed)) throw 'Parse error';
   const compiled = compileExpression(parsed.value, new CompilationContext());
   return `
 function(context) {

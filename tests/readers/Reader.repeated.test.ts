@@ -2,6 +2,7 @@ import { describe, it } from 'mocha';
 import { expect } from 'chai';
 
 import { Read } from '../../src/read/Read';
+import { ReadResult } from '../../src/read/ReadResult';
 
 describe('Reader.repeated', function() {
   const reader = Read.literal('abc').repeated();
@@ -11,9 +12,7 @@ describe('Reader.repeated', function() {
   })
   it('reads empty on failure', function() {
     expect(reader.read(str, 2))
-      .to.be.deep.equal({
-        type: 'token',
-        value: [],
+      .to.be.deep.equal(ReadResult.token([], {
         position: 2,
         length: 0,
         next: 2,
@@ -22,20 +21,17 @@ describe('Reader.repeated', function() {
           position: 2,
           context: []
         }]
-      });
+      }));
   });
   it('reads one', function() {
     expect(reader.read(str, 0))
-      .to.be.deep.equal({
-        type: 'token',
-        value: [{
-          type: 'token',
-          value: 'abc',
+      .to.be.deep.equal(ReadResult.token([
+        ReadResult.token('abc', {
           position: 0,
           length: 3,
-          next: 3,
-          errors: []
-        }],
+          next: 3
+        })
+      ], {
         position: 0,
         length: 3,
         next: 3,
@@ -44,34 +40,30 @@ describe('Reader.repeated', function() {
           position: 3,
           context: []
         }]
-      })
+      }));
   });
   it('reads multiple', function() {
     expect(reader.read(str, 6))
-      .to.be.deep.equal({
-        type: 'token',
-        value: [{
-          type: 'token',
-          value: 'abc',
+      .to.be.deep.equal(ReadResult.token([
+        ReadResult.token('abc', {
           position: 6,
           length: 3,
           next: 9,
           errors: []
-        }, {
-          type: 'token',
-          value: 'abc',
+        }),
+        ReadResult.token('abc', {
           position: 9,
           length: 3,
           next: 12,
           errors: []
-        }, {
-          type: 'token',
-          value: 'abc',
+        }),
+        ReadResult.token('abc', {
           position: 12,
           length: 3,
           next: 15,
           errors: []
-        }],
+        })
+      ], {
         position: 6,
         length: 9,
         next: 15,
@@ -80,7 +72,7 @@ describe('Reader.repeated', function() {
           position: 15,
           context: []
         }]
-      })
+      }))
   });
 
 });

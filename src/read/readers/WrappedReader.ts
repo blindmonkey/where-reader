@@ -1,6 +1,6 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
-import { ReadResult } from "../ReadResult";
+import { ReadResult, Symbols } from "../ReadResult";
 
 /**
  * Reads a `T` via a delegate `Reader`, surrounded by `Wrapper`. For instance,
@@ -22,18 +22,15 @@ export class WrappedReader<T, Wrapper> extends AbstractReader<T> {
   read(str: string, index: number): ReadResult<T> {
     const reader = this.wrapper.then(this.reader.then(this.wrapper));
     const result = reader.read(str, index);
-    switch (result.type) {
-      case 'failure': return result;
-      case 'token':
-        const token = result.value[1].value[0]
-        return {
-          type: 'token',
-          value: token.value,
+    return ReadResult.flatMap(result,
+      result => {
+        const token = result.value[1].value[0];
+        return ReadResult.token(token.value, {
           position: token.position,
           length: token.length,
           next: result.next,
           errors: result.errors
-        };
-    }
+        });
+      }, failure => failure);
   }
 }

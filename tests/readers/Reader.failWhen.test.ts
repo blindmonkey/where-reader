@@ -1,6 +1,7 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import { Read } from '../../src/read/Read';
+import { ReadResult } from '../../src/read/ReadResult';
 
 describe('FailReader', function() {
   const reader = Read.char('x')
@@ -12,9 +13,7 @@ describe('FailReader', function() {
   });
   it('can succeed', function() {
     expect(reader.read('zxy', 1))
-      .to.deep.equal({
-        type: 'token',
-        value: 'xy',
+      .to.deep.equal(ReadResult.token('xy', {
         position: 1,
         length: 2,
         next: 3,
@@ -23,28 +22,22 @@ describe('FailReader', function() {
           position: 3,
           context: []
         }]
-      });
+      }));
   });
   it('passes failure through', function() {
     expect(reader.read('zzxy', 1))
-      .to.deep.equal({
-        type: 'failure',
-        errors: [{
-          expected: "'x'",
-          position: 1,
-          context: []
-        }]
-      });
+      .to.deep.equal(ReadResult.failure([{
+        expected: "'x'",
+        position: 1,
+        context: []
+      }]));
   });
   it('fails on condition', function() {
     expect(reader.read('zx', 1))
-      .to.deep.equal({
-        type: 'failure',
-        errors: [{
-          expected: "'x' [...'y'] fails on condition",
-          position: 1,
-          context: []
-        }]
-      });
+      .to.deep.equal(ReadResult.failure([{
+        expected: "'x' [...'y'] fails on condition",
+        position: 1,
+        context: []
+      }]));
   });
 });

@@ -1,3 +1,4 @@
+import { ReadResult } from "../src/read/ReadResult";
 import { Reader } from "../src/read/Reader";
 import { ReadFailure } from "../src/read/ReadResult";
 
@@ -79,7 +80,7 @@ export function read<T>(reader: Reader<T>, string: string, withContext: boolean 
     };
   }
   const result = reader.read(string, 0);
-  if (result.type === 'failure') {
+  if (ReadResult.isFailure(result)) {
     if (withContext) {
       return processFailureWithContext(result);
     } else {

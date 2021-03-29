@@ -1,16 +1,14 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import { Read } from '../../src/read/Read';
+import { ReadResult } from '../../src/read/ReadResult';
 
 describe('Read.nextChar', function() {
   const reader = Read.nextChar();
   function success(position: number, length: number) {
-    return {
-      type: 'token',
-      value: 'x',
-      position, length, next: position + length,
-      errors: []
-    };
+    return ReadResult.token('x', {
+      position, length, next: position + length
+    });
   }
   it('reads first character', function() {
     expect(reader.read('xyz', 0))
@@ -22,13 +20,10 @@ describe('Read.nextChar', function() {
   });
   it('fails on eof', function() {
     expect(reader.read('xyz', 3))
-      .to.deep.equal({
-        type: 'failure',
-        errors: [{
-          expected: '<any char>',
-          position: 3,
-          context: []
-        }]
-      });
+      .to.deep.equal(ReadResult.failure([{
+        expected: '<any char>',
+        position: 3,
+        context: []
+      }]));
   });
 });
