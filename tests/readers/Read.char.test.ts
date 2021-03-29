@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { Read } from "../../src/read/Read";
 import { ReadResult } from "../../src/read/ReadResult";
 
-describe('CharReader', function() {
+describe('Read.char', function() {
   it('throws on multiple characters', function() {
     expect(() => Read.char('hello'))
       .to.throw('Read.char can only read one character at a time');
