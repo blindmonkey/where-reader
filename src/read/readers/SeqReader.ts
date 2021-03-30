@@ -12,7 +12,7 @@ import { MapReader, MapReadToken, MapReadType } from "../Types";
 export class SeqReader<T extends unknown[]> extends AbstractReader<MapReadToken<T>> {
   readers: MapReader<T>;
   get label(): string {
-    return this.readers.map((r: any) => r.label).join(' ');
+    return this.readers.map(r => r.label).join(' ');
   }
   private constructor(...readers: MapReader<T>) {
     super();
