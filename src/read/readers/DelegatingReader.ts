@@ -11,52 +11,38 @@ export type DelegateFn<T> = (str: string, index: number) => ReadResult<T>;
  * feature of modern languages, especially at the expression level.
  */
 export class DelegatingReader<T> extends AbstractReader<T> {
-  private delegate: {type: 'reader', reader: Reader<T>} | {type: 'function', delegate: DelegateFn<T>, label: LabelArgument};
+  private delegate: [Reader<T>] | [DelegateFn<T>, LabelArgument];
   constructor();
   constructor(delegate: Reader<T>);
   constructor(delegate: DelegateFn<T>, label: LabelArgument);
   constructor(...args: [] | [Reader<T>] | [DelegateFn<T>, LabelArgument]) {
     super();
     if (args.length === 0) {
-      this.delegate = {
-        type: 'function',
-        delegate() {
-          throw 'No delegating reader specified';
-        },
-        label: 'no delegate'
-      };
-    } else if (args.length === 2) {
-      const [delegate, label] = args;
-      this.delegate = {type: 'function', delegate, label};
+      this.delegate = [() => { throw 'No delegating reader specified'; }, 'no delegate'];
     } else {
-      this.delegate = {type: 'reader', reader: args[0]};
+      this.delegate = args;
     }
   }
   get label(): string {
-    switch (this.delegate.type) {
-      case 'function':
-        const label = this.delegate.label;
+    switch (this.delegate.length) {
+      case 1: return this.delegate[0].label;
+      case 2:
+        const label = this.delegate[1];
         switch (typeof label) {
           case 'string': return label;
           case 'function': return label();
         }
-      case 'reader': return this.delegate.reader.label;
     }
   }
   setDelegate(delegate: Reader<T>): void;
   setDelegate(delegate: DelegateFn<T>, label: string): void;
   setDelegate(...args: [Reader<T>] | [DelegateFn<T>, LabelArgument]) {
-    if (args.length === 2) {
-      const [delegate, label] = args;
-      this.delegate = { type: 'function', delegate, label };
-    } else {
-      this.delegate = { type: 'reader', reader: args[0] };
-    }
+    this.delegate = args;
   }
   read(str: string, index: number): ReadResult<T> {
-    switch (this.delegate.type) {
-      case 'function': return this.delegate.delegate(str, index);
-      case 'reader': return this.delegate.reader.read(str, index);
+    switch (this.delegate.length) {
+      case 1: return this.delegate[0].read(str, index);
+      case 2: return this.delegate[0](str, index);
     }
   }
 }

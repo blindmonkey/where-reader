@@ -3,7 +3,6 @@ import { Reader } from "../Reader";
 import { ReadResult, ReadToken } from "../ReadResult";
 import { MapReader, MapReadToken, MapReadType } from "../Types";
 
-
 /**
  * Reads a number of explicitly specified `Reader`s arranged sequentially.
  * However, because of a lack of support for variadic generics in TypeScript,
