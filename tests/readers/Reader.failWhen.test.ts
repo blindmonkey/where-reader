@@ -10,7 +10,7 @@ describe('Reader.failWhen', function() {
     .map(tokens => tokens[0].value + tokens[1].value.map(v => v.value).join(''))
     .failWhen(v => v.length < 2);
   it('has a label', function() {
-    expect(reader.label).to.be.equal("'x' [...'y'] fails on condition");
+    expect(reader.label).to.be.equal("'x' [* 'y'] fails on condition");
   });
   it('can succeed', function() {
     expect(reader.read('zxy', 1))
@@ -29,6 +29,6 @@ describe('Reader.failWhen', function() {
     expect(reader.read('zx', 1))
       .to.deep.equal(ReadResult.failure(
         ReadResult.error(
-          "'x' [...'y'] fails on condition", 1)));
+          "'x' [* 'y'] fails on condition", 1)));
   });
 });

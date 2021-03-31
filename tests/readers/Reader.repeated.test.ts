@@ -8,7 +8,7 @@ describe('Reader.repeated', function() {
   const reader = Read.literal('abc').repeated();
   const str = 'abcxyzabcabcabcxyz';
   it('has the correct label', function() {
-    expect(reader.label).to.be.equal('[..."abc"]');
+    expect(reader.label).to.be.equal('[* "abc"]');
   })
   it('reads empty on failure', function() {
     expect(reader.read(str, 2))

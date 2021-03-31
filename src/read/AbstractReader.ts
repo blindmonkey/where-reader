@@ -30,38 +30,19 @@ export abstract class AbstractReader<T> implements Reader<T> {
       label);
   }
   mapToken<Output>(f: (token: ReadToken<T>, str: string, position: number) => Output, label?: LabelArgument): Reader<Output> {
-    return this.flatMap((token, str, position) => ReadResult.token(f(token, str, position), {
-      position: token.position,
-      length: token.length,
-      next: token.next,
-      errors: token.errors
-    }), label);
+    return this.flatMap((token, str, position) =>
+      ReadResult.token(f(token, str, position), {
+        position: token.position,
+        length: token.length,
+        next: token.next,
+        errors: token.errors
+      }), label);
   }
   then<Next extends Reader<unknown>[]>(...next: Next): Reader<MapReadToken<[T, ...MapReadType<Next>]>> {
     return SeqReader.make(this, ...next);
   }
   repeated(): Reader<ReadToken<T>[]> {
-    return new DelegatingReader((str, index) => {
-      const tokens: ReadToken<T>[] = [];
-      let i = index;
-      let failure: ReadFailure | null = null;
-      while (true) {
-        const value = this.read(str, i);
-        if (ReadResult.isFailure(value)) {
-          failure = value;
-          break;
-        }
-        tokens.push(value);
-        i = value.next;
-      }
-      const lastToken = tokens[tokens.length - 1];
-      return ReadResult.token(tokens, {
-        position: index,
-        length: lastToken == null ? 0 : lastToken.position + lastToken.length - index,
-        next: lastToken == null ? index : lastToken.next,
-        errors: failure.errors
-      });
-    }, () => `[...${this.label}]`);
+    return new RepeatReader(this);
   }
   separatedBy<Sep>(sep: Reader<Sep>): Reader<ReadToken<T>[]> {
     return this
@@ -76,8 +57,8 @@ export abstract class AbstractReader<T> implements Reader<T> {
   }
   between<Left, Right>(left: Reader<Left>, right: Reader<Right>): Reader<T> {
     return left.then(this, right)
-      .map<ReadToken<T>>(tokens => tokens[1])
-      .flatMap<T>(token => ReadResult.token(token.value.value, {
+      .map(tokens => tokens[1])
+      .flatMap(token => ReadResult.token(token.value.value, {
         position: token.value.position,
         length: token.value.length,
         next: token.next,
@@ -180,4 +161,5 @@ import { DelegatingReader } from "./readers/DelegatingReader";
 import { SeqReader } from "./readers/SeqReader";
 import { MapReadToken, MapReadType } from "./Types";
 import { AnyReader } from "./readers/AnyReader";
+import { RepeatReader } from "./readers/RepeatReader";
 

@@ -1,4 +1,5 @@
 import { Reader } from "./Reader";
+import { AnyReader } from "./readers/AnyReader";
 import { DelegatingReader } from "./readers/DelegatingReader";
 import { SeqReader } from "./readers/SeqReader";
 import { ReadFailure, ReadResult } from "./ReadResult";
@@ -30,14 +31,19 @@ export class Read {
   }
 
   static empty(): Reader<null> {
-    return new DelegatingReader((str, index) => ReadResult.token(null, {
-      position: index,
-      length: 0,
-      next: index
-    }), '<empty>');
+    return new DelegatingReader((_, index) =>
+      ReadResult.token(null, {
+        position: index,
+        length: 0,
+        next: index
+      }), '<empty>');
   }
 
-  public static seq: typeof SeqReader.make = (...readers) => SeqReader.make(...readers);
+  public static any: typeof AnyReader.make =
+    (...readers) => AnyReader.make(...readers);
+
+  public static seq: typeof SeqReader.make =
+    (...readers) => SeqReader.make(...readers);
 
   static nextChar(): Reader<string> {
     const label = '<any char>';
@@ -106,7 +112,8 @@ export class Read {
     return Read.empty()
       .failWhen((_, str, index) => index < str.length)
       .mapFailure(
-        (_, _str, index) => ReadResult.failure(ReadResult.error(label, index)),
+        (_, _str, index) =>
+          ReadResult.failure(ReadResult.error(label, index)),
         label);
   }
 
@@ -115,9 +122,9 @@ export class Read {
   static fail(f: string | ((str: string, index: number) => ReadFailure)): Reader<never> {
     const label = '<fail>';
     if (typeof f === 'string') {
-      return new DelegatingReader(
-        (_, position) => ReadResult.failure(ReadResult.error(f, position)),
-        label);
+      const expected = f;
+      f = (_, position) =>
+        ReadResult.failure(ReadResult.error(expected, position));
     }
     return new DelegatingReader(f, label);
   }

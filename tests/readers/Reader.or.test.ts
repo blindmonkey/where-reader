@@ -9,6 +9,13 @@ describe('Reader.or', function() {
   it('has the correct label', function() {
     expect(reader.label).to.be.equal("'a' | 'b'");
   })
+  it('concatenates efficiently', function() {
+    const readera = Read.char('a').or(Read.char('b'));
+    const readerb = Read.char('c').or(Read.char('d'));
+    const reader = readera.or(readerb);
+    expect(reader.label).to.be.equal("'a' | 'b' | 'c' | 'd'");
+    expect((reader as any).readers).has.lengthOf(4);
+  });
   it('succeeds when Left succeeds', function() {
     expect(reader.read('xa', 1))
       .to.be.deep.equal(ReadResult.token('a', {

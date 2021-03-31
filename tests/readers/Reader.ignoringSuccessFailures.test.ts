@@ -7,7 +7,7 @@ import { ReadResult } from '../../src/read/ReadResult';
 describe('Reader.ignoringSuccessFailures', function() {
   const reader = Read.char('x').then(Read.char('y').repeated()).ignoringSuccessFailures();
   it('passes through label', function() {
-    expect(reader.label).to.equal("'x' [...'y']");
+    expect(reader.label).to.equal("'x' [* 'y']");
   });
   it('passes through failure', function() {
     expect(reader.read('zz', 0))
