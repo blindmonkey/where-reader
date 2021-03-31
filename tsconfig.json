@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es2015",
     "lib": ["esnext", "dom"],
     "module": "commonjs",
     "moduleResolution": "node",
+    "esModuleInterop": true,
     "strict": true,
     "allowJs": true,
     "sourceMap": true,
@@ -14,7 +15,9 @@
     "sourceRoot": "src",
     "outDir": "out/",
     "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "declaration": true
   },
+  "include": ["./src"],
   "exclude": ["out/**/*"]
 }
