@@ -39,6 +39,17 @@ type MapReadTokenSingle<Arr extends unknown[], K extends keyof Arr> =
 export type MapReadToken<Arr extends unknown[]> =
   { [K in keyof Arr]: MapReadTokenSingle<Arr, K> }
 
+export type MapEither<Arr extends unknown[]> =
+  Arr extends [] ? never :
+  Arr extends [infer T] ? T :
+  Arr extends [infer First, ...infer Rest] ?
+    First | MapEither<Rest> :
+  Arr extends [...infer Rest, infer Last] ?
+    Last | MapEither<Rest> :
+  Arr extends (infer T)[] ?
+    T :
+  never;
+
 type ReadType<R> =
   R extends Reader<infer T> ? T : never;
 type MapReadTypeSingle<Arr extends unknown[], K extends keyof Arr> =

@@ -5,15 +5,7 @@ export abstract class AbstractReader<T> implements Reader<T> {
   abstract label: string;
   abstract read(str: string, index: number): ReadResult<T>;
   or<Other>(other: Reader<Other>): Reader<T | Other> {
-    return this.mapResult<T | Other>((leftValue, str, index) =>
-      ReadResult.flatMap<T, T | Other>(
-        leftValue,
-        token => token,
-        leftValue => ReadResult.flatMap(
-          other.read(str, index),
-          token => token,
-          failure => ReadResult.failure(...leftValue.errors.concat(failure.errors)))
-      ), () => `${this.label} | ${other.label}`);
+    return AnyReader.make(this, other);
   }
   map<Output>(f: (input: T) => Output, label?: LabelArgument): Reader<Output> {
     return this.mapToken(token => f(token.value));
@@ -96,6 +88,18 @@ export abstract class AbstractReader<T> implements Reader<T> {
     return this.between(wrapper, wrapper);
   }
   labeled(label: string, options: LabelOptions = {}): Reader<T> {
+    function maybeSimplify(index: number, errors: ReadError[]): ReadError[] {
+      if ((options.simplify ?? true)
+          && errors.every(e => e.position === index)) {
+        return [{
+          position: index,
+          expected: label,
+          context: []
+        }];
+      } else {
+        return errors;
+      }
+    }
     function modifyErrors(errors: ReadError[], index: number): ReadError[] {
       if (options.relabel ?? false) {
         return [{
@@ -104,13 +108,13 @@ export abstract class AbstractReader<T> implements Reader<T> {
           context: []
         }];
       } else if (options.context ?? true) {
-        return errors.map(error => ({
+        return maybeSimplify(index, errors.map(error => ({
           position: error.position,
           expected: error.expected,
           context: [{position: index, label: label}].concat(error.context)
-        }));
+        })));
       } else {
-        return errors;
+        return maybeSimplify(index, errors);
       }
     }
     return this.mapResult((result, _, index) =>
@@ -175,4 +179,5 @@ import { LabelArgument, ResultMapReader } from "./readers/ResultMapReader";
 import { DelegatingReader } from "./readers/DelegatingReader";
 import { SeqReader } from "./readers/SeqReader";
 import { MapReadToken, MapReadType } from "./Types";
+import { AnyReader } from "./readers/AnyReader";
 

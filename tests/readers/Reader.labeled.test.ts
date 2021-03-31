@@ -6,11 +6,16 @@ import { ReadResult } from '../../src/read/ReadResult';
 
 describe('Reader.labeled', function() {
   const base = Read.char('x').then(Read.char('y').repeated());
-  const reader = base.labeled('token x', {relabel: false, context: false});
-  const relabel = base.labeled('token x', {relabel: true});
-  const recontext = base.labeled('token x', {context: true});
+  const reader = base.labeled('token x', {relabel: false, context: false, simplify: false});
+  const relabel = base.labeled('token x', {relabel: true, simplify: false});
+  const recontext = base.labeled('token x', {context: true, simplify: false});
   it('default behavior', function() {
     expect(base.labeled('token x').read('z', 0))
+      .to.deep.equal(ReadResult.failure(ReadResult.error(
+        "token x", 0, [])));
+  });
+  it('default behavior, no simplify', function() {
+    expect(base.labeled('token x', {simplify: false}).read('z', 0))
       .to.deep.equal(ReadResult.failure(ReadResult.error(
         "'x'", 0, [{label: 'token x', position: 0}])));
   });
