@@ -1,9 +1,40 @@
-const r = require('./out/index');
+const { ReadResult, jsonFileRead, jsonFileCompiled, convertJsonValue } = require('./out/index');
 const path = require('path');
 const fs = require('fs').promises;
 const { expect } = require('chai');
+const yargs = require('yargs');
+const performance = require('perf_hooks').performance;
 
-const ReadResult = r.ReadResult;
+const argv = yargs
+  .option('mode', {
+    alias: 'm',
+    description: 'The parsing mode to use',
+    choices: ['native', 'reader', 'compiled'],
+    default: 'reader'
+  })
+  .option('runs', {
+    description: 'number of runs for benchmark',
+    type: 'number',
+    default: 10
+  })
+  .option('report-expected-failures', {
+    alias: 'r',
+    description: 'Whether expected failures should be reported',
+    type: 'boolean'
+  })
+  .option('verify', {
+    description: 'Whether the results should be verified using the native parser',
+    type: 'boolean'
+  })
+  .option('benchmark', {
+    alias: 'b',
+    description: 'Whether we should benchmark parse times',
+    type: 'boolean'
+  })
+  .help()
+  .alias('help', 'h')
+  .argv;
+
 const testdir = path.join('.', 'test_parsing');
 
 const Expectation = {
@@ -11,14 +42,6 @@ const Expectation = {
   fail: 'n_',
   either: 'i_'
 };
-
-function repeat(s, n) {
-  const out = [];
-  for (let i = 0; i < n; i++) {
-    out.push(s);
-  }
-  return out.join('');
-}
 
 function nullWhen(value, f) {
   if (f(value)) return null;
@@ -99,27 +122,56 @@ async function readFile(filename) {
 }
 
 async function main() {
+  const benchmarkRuns = argv.runs;
+  let benchmarkResults = {};
   let dir = await fs.readdir(testdir);
   let failures = 0;
   const undef = [0, 0];
   for (let i = 0; i < dir.length; i++) {
     const filename = dir[i];
     if (!filename.endsWith('.json')) continue;
+    // console.info(filename);
     const expectation = filename.slice(0, 2);
     const result = await readFile(path.join(testdir, filename));
+    const parser = (() => {
+      switch (argv.mode) {
+        case 'reader':
+          return jsonFileRead;
+        case 'compiled':
+          return jsonFileCompiled;
+        case 'native':
+          return (str, position) => {
+            const obj = JSON.parse(str.slice(position));
+            return ReadResult.token(obj, {});
+          };
+        default:
+          throw 'Unknown mode: ' + argv.mode;
+      }
+    })();
+    const parse = () => {
+      try {
+        return parser(result, 0);
+      } catch (e) {
+        return ReadResult.failure(ReadResult.error(`${e.toString()}\n${e.stack}`, result.length));
+      }
+    }
     let parsed;
-    try {
-      parsed = r.jsonFile.read(result, 0);
-    } catch (e) {
-      parsed = ReadResult.failure(ReadResult.error(`${e.toString()}\n${e.stack}`, result.length));
+    if (!argv.benchmark) {
+      parsed = parse();
+    } else {
+      const now = performance.now();
+      for (let i = 0; i < benchmarkRuns; i++) {
+        parsed = parse();
+      }
+      benchmarkResults[filename] = performance.now() - now;
     }
     if (expectation === Expectation.either) {
       const res = ReadResult.isSuccess(parsed) ? 'pass' : 'fail';
       undef[1]++;
       if (ReadResult.isFailure(parsed)) {
         console.log(`undefined case -- ${res} -- ${filename}`);
-        console.log(await fs.readFile(path.join(testdir, filename)))
-        console.log(hexstring(result));
+        // console.log(await fs.readFile(path.join(testdir, filename)))
+        // console.log(hexstring(result));
         reportFailure(filename, result, parsed);
       } else {
         undef[0]++;
@@ -128,16 +180,18 @@ async function main() {
       (ReadResult.isSuccess(parsed) && expectation == Expectation.pass) ||
       (ReadResult.isFailure(parsed) && expectation == Expectation.fail)) {
       if (ReadResult.isFailure(parsed)) {
-        // reportFailure(filename, result, parsed);
-      } else {
+        if (argv['report-expected-failures']) {
+          reportFailure(filename, result, parsed);
+        }
+      } else if (argv.verify) {
         const nativeParsed = JSON.parse(result);
         try {
-          expect(nativeParsed).to.be.deep.equal(r.convertJsonValue(parsed.value));
+          expect(nativeParsed).to.be.deep.equal(convertJsonValue(parsed.value));
         } catch (e) {
           console.error(`${filename} -- values not equal`);
           console.error(nativeParsed);
           console.error(parsed);
-          console.error(r.convertJsonValue(parsed.value));
+          console.error(convertJsonValue(parsed.value));
         }
       }
     } else {
@@ -147,6 +201,25 @@ async function main() {
     }
   }
   console.error(`Failed ${failures} tests, passed ${undef[0]}/${undef[1]} undefined cases`);
+  if (argv.benchmark) {
+    let min = null;
+    let max = null;
+    let sum = 0;
+    let cnt = 0;
+    for (const k in benchmarkResults) {
+      const time = benchmarkResults[k];
+      if (min == null || time < benchmarkResults[min])
+        min = k;
+      if (max == null || time > benchmarkResults[max])
+        max = k;
+      sum += time;
+      cnt++;
+    }
+    console.info(`Benchmark results (${benchmarkRuns} runs):`);
+    console.info(`Quickest time: ${min} / ${benchmarkResults[min] / benchmarkRuns}ms`);
+    console.info(`Slowest time: ${max} / ${benchmarkResults[max] / benchmarkRuns}ms`);
+    console.info(`Average time: ${sum / cnt / benchmarkRuns}ms`);
+  }
 }
 
 main();
