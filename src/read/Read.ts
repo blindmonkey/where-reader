@@ -23,7 +23,7 @@ export class Read {
     if (expected.length !== 1)
       throw 'Read.char can only read one character at a time';
     return Read.nextChar()
-      .failWhen(value => !compare(value))
+      .failWhen(value => !compare(value), `< == ${expected}>`)
       .mapToken(() => expected, label)
       .mapFailure(
         (_1, _2, index) => ReadResult.failure(ReadResult.error(label, index)),
@@ -48,9 +48,10 @@ export class Read {
   static nextChar(): Reader<string> {
     const label = '<any char>';
     return Read.empty()
-      .failWhen((_, str, index) => index >= str.length)
+      .failWhen((_, str, index) => index >= str.length, '<not EOF>')
       .mapFailure((_1, _2, index) =>
-        ReadResult.failure(ReadResult.error(label, index)))
+        ReadResult.failure(ReadResult.error(label, index)),
+        label)
       .flatMap((_, str, index) => ReadResult.token(str[index], {
         position: index,
         length: 1,

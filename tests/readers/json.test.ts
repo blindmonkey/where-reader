@@ -1,11 +1,10 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
 
-import { number } from '../../src/languages/json/primitives';
 import { value, Json } from '../../src/languages/json/complex';
 import { Read } from '../../src/read/Read';
-import { read } from '../read-helpers';
-import { ReadError } from '../../src/read/ReadResult';
+import { error, errors, read } from '../read-helpers';
+import { ReadResult } from '../../src/read/ReadResult';
 
 const reader = value.lookahead(Read.eof());
 function itShouldFail(name: string, str: string, ...errors: {expected: string, position: number, context: string}[]) {
@@ -15,9 +14,76 @@ function itShouldFail(name: string, str: string, ...errors: {expected: string, p
   });
 }
 
+//*
 describe('JSON', function() {
   it('should parse number', function() {
-    expect(read(value, '42')).to.be.deep.equal(Json.number('42'));
+    expect(read(value, '')).to.be.deep.equal(errors(
+      error('JSON value', 0)
+    ));
+    expect(read(value, '42')).to.be.deep.equal(ReadResult.token(
+      Json.number('42'), {
+        position: 0,
+        length: 2,
+        next: 2,
+        errors: [
+          ReadResult.error("'-'", 0, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0),
+            ReadResult.context('integer', 0)
+          ]),
+          ReadResult.error("'0'", 2, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0),
+            ReadResult.context('integer', 0),
+            ReadResult.context('digits', 1)
+          ]),
+          ReadResult.error('/[1-9]/', 2, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0),
+            ReadResult.context('integer', 0),
+            ReadResult.context('digits', 1)
+          ]),
+          ReadResult.error('fractional component', 2, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0)
+          ]),
+          ReadResult.error('exponent', 2, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0)
+          ])
+        ]
+      }));
+  });
+
+  it('should support recursion', function() {
+    function rec(n: number): 0 {
+      if (n > 0) {
+        return rec(n - 1);
+      }
+      return 0;
+    }
+    const erec = eval(`
+(function() {
+  function rec(n) {
+    if (n > 0) {
+      return rec(n - 1);
+    }
+    return 0;
+  }
+  return rec;
+})`)();
+    const reps = 300;
+    expect(rec(reps)).to.be.equal(0);
+    expect(erec(reps)).to.be.equal(0);
+  });
+  const reps = 92;
+  it(`should parse ${reps} nested arrays`, function() {
+    const res = read(value, '['.repeat(reps) + ']'.repeat(reps))
+    let arr = Json.array([]);
+    for (let i = 1; i < reps; i++) {
+      arr = Json.array([arr]);
+    }
+    expect(res.value).to.be.deep.equal(arr);
   });
 
   itShouldFail('array_1_true_without_comma', '[1 true]', {
@@ -2018,24 +2084,6 @@ describe('JSON', function() {
     context: 'JSON value:0 > JSON object:0'
   });
 
-  itShouldFail('structure_object_with_comment', '{"a":/*comment*/"b"}', {
-    position: 0,
-    expected: "string literal | JSON array | boolean literal | \"null\" | number literal",
-    context: 'JSON value:0'
-  }, {
-    position: 1,
-    expected: "'}'",
-    context: 'JSON value:0 > JSON object:0'
-  }, {
-    position: 3,
-    expected: "'\\' | valid unescaped char",
-    context: 'JSON value:0 > JSON object:0 > string literal:1'
-  }, {
-    position: 5,
-    expected: "JSON value",
-    context: 'JSON value:0 > JSON object:0'
-  });
-
   itShouldFail('structure_open_array_apostrophe', '[\'', {
     position: 0,
     expected: "string literal | JSON object | boolean literal | \"null\" | number literal",
@@ -2281,5 +2329,4 @@ describe('JSON', function() {
     expected: "',' | '}'",
     context: 'JSON value:0 > JSON object:0'
   });
-
 });

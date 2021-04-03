@@ -3,6 +3,7 @@ import { expect } from 'chai';
 
 import { Read } from '../../src/read/Read';
 import { ReadResult } from '../../src/read/ReadResult';
+import { read } from '../read-helpers';
 
 describe('Reader.repeated', function() {
   const reader = Read.literal('abc').repeated();
@@ -11,7 +12,7 @@ describe('Reader.repeated', function() {
     expect(reader.label).to.be.equal('[* "abc"]');
   })
   it('reads empty on failure', function() {
-    expect(reader.read(str, 2))
+    expect(read(reader, str, 2))
       .to.be.deep.equal(ReadResult.token([], {
         position: 2,
         length: 0,
@@ -24,7 +25,7 @@ describe('Reader.repeated', function() {
       }));
   });
   it('reads one', function() {
-    expect(reader.read(str, 0))
+    expect(read(reader, str, 0))
       .to.be.deep.equal(ReadResult.token([
         ReadResult.token('abc', {
           position: 0,
@@ -43,7 +44,7 @@ describe('Reader.repeated', function() {
       }));
   });
   it('reads multiple', function() {
-    expect(reader.read(str, 6))
+    expect(read(reader, str, 6))
       .to.be.deep.equal(ReadResult.token([
         ReadResult.token('abc', {
           position: 6,

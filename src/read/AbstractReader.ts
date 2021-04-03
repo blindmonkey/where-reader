@@ -110,14 +110,23 @@ export abstract class AbstractReader<T> implements Reader<T> {
         failure => ReadResult.failure(...modifyErrors(failure.errors, index))),
       label);
   }
-  failWhen(condition: (value: T, str: string, index: number) => boolean): Reader<T> {
-    const label = () => `${this.label} fails on condition`;
+  failWhen(condition: (value: T, str: string, index: number) => boolean, label?: LabelArgument): Reader<T> {
+    // const label = () => `${this.label} fails on condition`;
+    const getLabel = () => {
+      if (label == null) {
+        return `${this.label} fails on condition`;;
+      } else if (typeof label === 'string') {
+        return label;
+      } else {
+        return label();
+      }
+    }
     return this.flatMap<T>((result, str, index) => {
       if (condition(result.value, str, index)) {
-        return ReadResult.failure(ReadResult.error(label(), index));
+        return ReadResult.failure(ReadResult.error(getLabel(), index));
       }
       return result;
-    }, label);
+    }, getLabel);
   }
   lookahead<Ahead>(ahead: Reader<Ahead>): Reader<T> {
     return this.then(ahead)

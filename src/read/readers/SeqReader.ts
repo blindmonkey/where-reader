@@ -2,13 +2,15 @@ import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadResult, ReadToken } from "../ReadResult";
 import { MapReader, MapReadToken, MapReadType } from "../Types";
+import { Compilable, compilation, Symbols } from "./CompilationSupport";
 
 /**
  * Reads a number of explicitly specified `Reader`s arranged sequentially.
  * However, because of a lack of support for variadic generics in TypeScript,
  * `T` must be the same for all the readers.
  */
-export class SeqReader<T extends unknown[]> extends AbstractReader<MapReadToken<T>> {
+export class SeqReader<T extends unknown[]> extends AbstractReader<MapReadToken<T>> implements Compilable<'seq'> {
+  [compilation]: Symbols['seq'] = Symbols.seq;
   readers: MapReader<T>;
   get label(): string {
     return this.readers.map(r => r.label).join(' ');

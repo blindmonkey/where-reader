@@ -54,6 +54,9 @@ export namespace ReadResult {
       errors: errors
     };
   }
+  export function context(label: string, position: number): ReadContext {
+    return { label, position };
+  }
   export function error(expected: string, position: number, context: ReadContext[] = []): ReadError {
     return {
       expected: expected,

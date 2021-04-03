@@ -1,8 +1,10 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadFailure, ReadResult, ReadToken } from "../ReadResult";
+import { Compilable, compilation, Symbols } from "./CompilationSupport";
 
-export class RepeatReader<T> extends AbstractReader<ReadToken<T>[]> {
+export class RepeatReader<T> extends AbstractReader<ReadToken<T>[]> implements Compilable<'repeat'> {
+  [compilation]: Symbols['repeat'] = Symbols.repeat;
   reader: Reader<T>;
   get label(): string {
     return `[* ${this.reader.label}]`;

@@ -1,6 +1,7 @@
 import { ReadResult } from "../src/read/ReadResult";
 import { Reader } from "../src/read/Reader";
 import { ReadFailure } from "../src/read/ReadResult";
+import { compile } from "../src/read/readers/CompilationSupport";
 
 function deduplicate(arr: string[]): string[] {
   const sentinel = {};
@@ -14,7 +15,8 @@ function deduplicate(arr: string[]): string[] {
   });
   return result;
 }
-export function read<T>(reader: Reader<T>, string: string, withContext: boolean = true) {
+const compiled = Symbol('compiled');
+export function read<T>(reader: Reader<T>, string: string, position: number = 0, withContext: boolean = true) {
   function processFailure(failure: ReadFailure) {
     const byPosition: { [position : number]: {
       position: number,
@@ -79,7 +81,13 @@ export function read<T>(reader: Reader<T>, string: string, withContext: boolean 
       })
     };
   }
-  const result = reader.read(string, 0);
+  let r;
+  if (compiled in reader) {
+    r = (reader as any)[compiled];
+  } else {
+    r = (reader as any)[compiled] = compile(reader);
+  }
+  const result = r(string, position);
   if (ReadResult.isFailure(result)) {
     if (withContext) {
       return processFailureWithContext(result);
@@ -87,7 +95,7 @@ export function read<T>(reader: Reader<T>, string: string, withContext: boolean 
       return processFailure(result);
     }
   }
-  return result.value;
+  return result;
 }
 export function identifier(identifier: string, position: number, length: number) {
   return { type: 'identifier', identifier, position, length };
@@ -109,4 +117,10 @@ export function subscript<A, B>(value: A, property: B) {
 }
 export function string(content: string, position: number, length: number) {
   return { type: 'string', content, position, length };
+}
+export function error(expected: string, position: number, context: string = '') {
+  return { expected, position, context };
+}
+export function errors(...errors: {context: string, expected: string, position: number}[]) {
+  return { errors };
 }

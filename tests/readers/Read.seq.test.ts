@@ -3,6 +3,7 @@ import { expect } from 'chai';
 
 import { Read } from '../../src/read/Read';
 import { ReadResult } from '../../src/read/ReadResult';
+import { read, errors, error } from '../read-helpers';
 
 describe('Read.seq', function() {
   const reader0 = Read.seq();
@@ -12,7 +13,7 @@ describe('Read.seq', function() {
     expect(reader0.label).to.be.equal('');
   });
   it('should read empty without any readers', function() {
-    expect(reader0.read('abc', 1))
+    expect(read(reader0, 'abc', 1))
       .to.deep.equal(ReadResult.token([], {
         position: 1, length: 0, next: 1
       }));
@@ -21,7 +22,7 @@ describe('Read.seq', function() {
     expect(reader1.label).to.be.equal("'a'");
   });
   it('should read correctly with one reader in sequence', function() {
-    expect(reader1.read('xyzabc', 3))
+    expect(read(reader1, 'xyzabc', 3))
       .to.be.deep.equal(ReadResult.token([
         ReadResult.token('a', {
           position: 3, length: 1, next: 4
@@ -29,7 +30,7 @@ describe('Read.seq', function() {
       ], { position: 3, length: 1, next: 4 }));
   });
   it('should read correctly with three readers in sequence', function() {
-    expect(reader3.read('xyzabc', 3))
+    expect(read(reader3, 'xyzabc', 3))
       .to.be.deep.equal(ReadResult.token([
         ReadResult.token('a', { position: 3, length: 1, next: 4 }),
         ReadResult.token('b', { position: 4, length: 1, next: 5 }),
@@ -37,15 +38,15 @@ describe('Read.seq', function() {
       ], { position: 3, length: 3, next: 6 }));
   });
   it('should fail when first reader fails', function() {
-    expect(reader3.read('xybcbc', 1))
-      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'a'", 1)));
+    expect(read(reader3, 'xybcbc', 1))
+      .to.be.deep.equal(errors(error("'a'", 1)));
   });
   it('should fail when second reader fails', function() {
-    expect(reader3.read('xazcbc', 1))
-      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'b'", 2)));
+    expect(read(reader3, 'xazcbc', 1))
+      .to.be.deep.equal(errors(error("'b'", 2)));
   });
   it('should fail when third reader fails', function() {
-    expect(reader3.read('xabzbc', 1))
-      .to.be.deep.equal(ReadResult.failure(ReadResult.error("'c'", 3)));
+    expect(read(reader3, 'xabzbc', 1))
+      .to.be.deep.equal(errors(error("'c'", 3)));
   });
 });

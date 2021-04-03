@@ -1,9 +1,11 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadError, ReadResult } from "../ReadResult";
-import { MapEither, MapReader, MapReadToken, MapReadType } from "../Types";
+import { MapEither, MapReader, MapReadType } from "../Types";
+import { Compilable, compilation, Symbols } from "./CompilationSupport";
 
-export class AnyReader<T extends unknown[]> extends AbstractReader<MapEither<T>> {
+export class AnyReader<T extends unknown[]> extends AbstractReader<MapEither<T>> implements Compilable<'any'> {
+  [compilation]: Symbols['any'] = Symbols.any;
   readers: MapReader<T>;
   get label(): string {
     return this.readers.map(r => r.label).join(' | ')

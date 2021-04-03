@@ -1,6 +1,7 @@
 import { AbstractReader } from "../AbstractReader";
 import { Reader } from "../Reader";
 import { ReadResult } from "../ReadResult";
+import { Compilable, compilation, Symbols } from "./CompilationSupport";
 import { LabelArgument } from "./ResultMapReader";
 
 export type DelegateFn<T> = (str: string, index: number) => ReadResult<T>;
@@ -10,8 +11,9 @@ export type DelegateFn<T> = (str: string, index: number) => ReadResult<T>;
  * grammars. It should be used with care, but circular grammars are a common
  * feature of modern languages, especially at the expression level.
  */
-export class DelegatingReader<T> extends AbstractReader<T> {
-  private delegate: [Reader<T>] | [DelegateFn<T>, LabelArgument];
+export class DelegatingReader<T> extends AbstractReader<T> implements Compilable<'delegating'> {
+  [compilation]: Symbols['delegating'] = Symbols.delegating;
+  delegate: [Reader<T>] | [DelegateFn<T>, LabelArgument];
   constructor();
   constructor(delegate: Reader<T>);
   constructor(delegate: DelegateFn<T>, label: LabelArgument);
