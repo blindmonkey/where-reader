@@ -190,13 +190,20 @@ String.prototype.replaceAll = String.prototype.replaceAll || function(s: string,
   return replaceAll(this as any as string, s, ss);
 };
 
+class CompilationContext {
+  private id_: number = 0;
+  get nextId(): number {
+    return this.id_++;
+  }
+}
+
 const POSITION = 'p';
 const RESULT = 'r';
 const STR = 's';
 const NL = '\n';
 const READ_RESULT = 'ReadResult';
 
-function compileRepr(repr: SomeReaderRepr, indent: number = 0): string {
+function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: number = 0): {id: number, code: string} {
   const ws = '  '.repeat(indent);
   const ws_1 = '  '.repeat(indent + 1);
   const ws___2 = '  '.repeat(indent + 2);
@@ -208,102 +215,120 @@ function compileRepr(repr: SomeReaderRepr, indent: number = 0): string {
     .replaceAll('\t', '\\t')
     .replaceAll('\b', '\\b')
     .replaceAll('\f', '\\f')}\n`;
+  const id = context.nextId;
   const blabel = `${ws}// >>> ${lbl}`;
-  const flabel = `${ws}// >>> ${lbl}`;
+  const flabel = `${ws}// <<< ${lbl}`;
   switch (repr.type) {
     case Symbols.resultMap:
-      return `${blabel}`
-        + `${ws}let ${POSITION}${repr.reader.id} = ${POSITION}${repr.id};${NL}`
-        + `${compileRepr(repr.reader, indent + 1)}`
-        + `${ws}let ${RESULT}${repr.id} = deps[${repr.id}](${RESULT}${repr.reader.id}, ${STR}, ${POSITION}${repr.id});${NL}`
-        + flabel;
+      const subreader = compileRepr(repr.reader, context, indent + 1);
+      return {
+        id, code:
+        `${blabel}`
+        + `${ws}let ${POSITION}${subreader.id} = ${POSITION}${id};${NL}`
+        + `${subreader.code}`
+        + `${ws}let ${RESULT}${id} = deps[${repr.id}](${RESULT}${subreader.id}, ${STR}, ${POSITION}${id});${NL}`
+        + flabel
+      };
     case Symbols.delegating:
       switch (repr.delegate.type) {
         case 'function':
-          return `${blabel}`
-            + `${ws}let ${RESULT}${repr.id} = deps[${repr.id}](${STR}, ${POSITION}${repr.id});${NL}`
-            + flabel;
+          return {id, code: `${blabel}`
+            + `${ws}let ${RESULT}${id} = deps[${repr.id}](${STR}, ${POSITION}${id});${NL}`
+            + flabel
+          };
         case 'reader':
-          return blabel
-          + `${ws}let ${RESULT}${repr.id} = del${repr.id}(${STR}, ${POSITION}${repr.id});${NL}`
-          + flabel;
+          return {id, code: blabel
+            + `${ws}let ${RESULT}${id} = del${repr.id}(${STR}, ${POSITION}${id});${NL}`
+            + flabel
+          };
       }
     case Symbols.any:
-      return blabel
-        + `${ws}let errors${repr.id} = [];${NL}`
-        + `${ws}let ${RESULT}${repr.id} = null;${NL}`
-        + repr.readers.map(r => (
-          `${ws}if (${RESULT}${repr.id} == null) {${NL}`
-        + `${ws_1}let ${POSITION}${r.id} = ${POSITION}${repr.id};${NL}`
-        + `${compileRepr(r, indent + 1)}`
-        + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${r.id})) {${NL}`
-        + `${ws___2}errors${repr.id} = errors${repr.id}.concat(${RESULT}${r.id}.errors);${NL}`
+      return {id, code: blabel
+        + `${ws}let errors${id} = [];${NL}`
+        + `${ws}let ${RESULT}${id} = null;${NL}`
+        + repr.readers.map(r => {
+          const rc = compileRepr(r, context, indent + 1);
+          return `${ws}if (${RESULT}${id} == null) {${NL}`
+        + `${ws_1}let ${POSITION}${rc.id} = ${POSITION}${id};${NL}`
+        + `${rc.code}`
+        + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${rc.id})) {${NL}`
+        + `${ws___2}errors${id} = errors${id}.concat(${RESULT}${rc.id}.errors);${NL}`
         + `${ws_1}} else {${NL}`
-        + `${ws___2}${RESULT}${repr.id} = ${RESULT}${r.id};${NL}`
+        + `${ws___2}${RESULT}${id} = ${RESULT}${rc.id};${NL}`
         + `${ws_1}}${NL}`
         + `${ws}}${NL}`
-        )).join('')
-        + `${ws}if (${RESULT}${repr.id} == null) {${NL}`
-        + `${ws_1}${RESULT}${repr.id} = ${READ_RESULT}.failure(...errors${repr.id});${NL}`
+        }).join('')
+        + `${ws}if (${RESULT}${id} == null) {${NL}`
+        + `${ws_1}${RESULT}${id} = ${READ_RESULT}.failure(...errors${id});${NL}`
         + `${ws}}${NL}`
-        + flabel;
+        + flabel
+      };
 
     case Symbols.seq:
-      return blabel
-          + `${ws}let tokens${repr.id} = [];${NL}`
-          + `${ws}let errors${repr.id} = [];${NL}`
-          + `${ws}let failure${repr.id} = false;${NL}`
-          + `${ws}let next${repr.id} = ${POSITION}${repr.id};${NL}`
-          + repr.readers.map(r => (
-            `${ws}if (!failure${repr.id}) {${NL}`
-          + `${ws_1}let ${POSITION}${r.id} = next${repr.id};${NL}`
-          + `${compileRepr(r, indent + 1)}`
-          + `${ws_1}errors${repr.id}.push(...${RESULT}${r.id}.errors);${NL}`
-          + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${r.id})) {${NL}`
-          + `${ws___2}failure${repr.id} = true;${NL}`
+      return {id, code: blabel
+          + `${ws}let tokens${id} = [];${NL}`
+          + `${ws}let errors${id} = [];${NL}`
+          + `${ws}let failure${id} = false;${NL}`
+          + `${ws}let next${id} = ${POSITION}${id};${NL}`
+          + repr.readers.map(r => {
+            const rc = compileRepr(r, context, indent + 1);
+            return `${ws}if (!failure${id}) {${NL}`
+          + `${ws_1}let ${POSITION}${rc.id} = next${id};${NL}`
+          + `${rc.code}`
+          + `${ws_1}errors${id}.push(...${RESULT}${rc.id}.errors);${NL}`
+          + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${rc.id})) {${NL}`
+          + `${ws___2}failure${id} = true;${NL}`
           + `${ws_1}} else {${NL}`
-          + `${ws___2}tokens${repr.id}.push(${RESULT}${r.id});${NL}`
-          + `${ws___2}next${repr.id} = ${RESULT}${r.id}.next;${NL}`
+          + `${ws___2}tokens${id}.push(${RESULT}${rc.id});${NL}`
+          + `${ws___2}next${id} = ${RESULT}${rc.id}.next;${NL}`
           + `${ws_1}}${NL}`
           + `${ws}}${NL}`
-          )).join('')
-          + `${ws}let ${RESULT}${repr.id};${NL}`
-          + `${ws}if (failure${repr.id}) {${NL}`
-          + `${ws_1}${RESULT}${repr.id} = ${READ_RESULT}.failure(...errors${repr.id});${NL}`
+          }).join('')
+          + `${ws}let ${RESULT}${id};${NL}`
+          + `${ws}if (failure${id}) {${NL}`
+          + `${ws_1}${RESULT}${id} = ${READ_RESULT}.failure(...errors${id});${NL}`
           + `${ws}} else {${NL}`
-          + `${ws_1}${RESULT}${repr.id} = ${READ_RESULT}.token(tokens${repr.id}, {${NL}`
-          + `${ws___2}position: ${POSITION}${repr.id},${NL}`
-          + `${ws___2}length: next${repr.id} - ${POSITION}${repr.id},${NL}`
-          + `${ws___2}next: next${repr.id},${NL}`
-          + `${ws___2}errors: errors${repr.id}${NL}`
+          + `${ws_1}${RESULT}${id} = ${READ_RESULT}.token(tokens${id}, {${NL}`
+          + `${ws___2}position: ${POSITION}${id},${NL}`
+          + `${ws___2}length: next${id} - ${POSITION}${id},${NL}`
+          + `${ws___2}next: next${id},${NL}`
+          + `${ws___2}errors: errors${id}${NL}`
           + `${ws_1}});${NL}`
           + `${ws}}${NL}`
-          + flabel;
+          + flabel
+      };
 
     case Symbols.repeat:
-      return blabel
-        + `${ws}let tokens${repr.id} = [];${NL}`
-        + `${ws}let errors${repr.id} = [];${NL}`
-        + `${ws}let next${repr.id} = ${POSITION}${repr.id};${NL}`
+      const repsubreader = compileRepr(repr.reader, context, indent + 2);
+      return {id, code: blabel
+        + `${ws}let tokens${id} = [];${NL}`
+        + `${ws}let errors${id} = [];${NL}`
+        + `${ws}let next${id} = ${POSITION}${id};${NL}`
         + `${ws}while (true) {${NL}`
-        + `${ws_1}let ${POSITION}${repr.reader.id} = next${repr.id};${NL}`
-        + `${compileRepr(repr.reader, indent + 2)}`
-        + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${repr.reader.id})) {${NL}`
-        + `${ws___2}errors${repr.id} = ${RESULT}${repr.reader.id}.errors;${NL}`
+        + `${ws_1}let ${POSITION}${repsubreader.id} = next${id};${NL}`
+        + `${repsubreader.code}`
+        + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${repsubreader.id})) {${NL}`
+        + `${ws___2}errors${id} = ${RESULT}${repsubreader.id}.errors;${NL}`
         + `${ws___2}break;${NL}`
         + `${ws_1}} else {${NL}`
-        + `${ws___2}tokens${repr.id}.push(${RESULT}${repr.reader.id});${NL}`
-        + `${ws___2}next${repr.id} = ${RESULT}${repr.reader.id}.next;${NL}`
+        + `${ws___2}tokens${id}.push(${RESULT}${repsubreader.id});${NL}`
+        + `${ws___2}next${id} = ${RESULT}${repsubreader.id}.next;${NL}`
         + `${ws_1}}${NL}`
         + `${ws}}${NL}`
-        + `${ws}let ${RESULT}${repr.id} = ${READ_RESULT}.token(tokens${repr.id}, {${NL}`
-        + `${ws_1}position: ${POSITION}${repr.id},${NL}`
-        + `${ws_1}length: next${repr.id} - ${POSITION}${repr.id},${NL}`
-        + `${ws_1}next: next${repr.id},${NL}`
-        + `${ws_1}errors: errors${repr.id}${NL}`
+        + `${ws}let ${RESULT}${id} = ${READ_RESULT}.token(tokens${id}, {${NL}`
+        + `${ws_1}position: ${POSITION}${id},${NL}`
+        + `${ws_1}length: next${id} - ${POSITION}${id},${NL}`
+        + `${ws_1}next: next${id},${NL}`
+        + `${ws_1}errors: errors${id}${NL}`
         + `${ws}});${NL}`
-        + flabel;
+        + flabel
+      };
   }
+}
+
+function compileReprInitial(repr: SomeReaderRepr, indent: number): {id: number, code: string} {
+  const context = new CompilationContext();
+  return compileRepr(repr, context, indent);
 }
 
 export function compile<T>(reader: Reader<T>): (str: string, index: number) => ReadResult<T> {
@@ -323,9 +348,10 @@ export function compile<T>(reader: Reader<T>): (str: string, index: number) => R
           deps[reader.id] = reader.delegate.fn;
         } else {
           const r = reader.delegate.reader;
-          delegates.push(`  function del${id}(${STR}, ${POSITION}${r.id}) {\n`
-            + `${compileRepr(r, 2)}`
-            + `    return ${RESULT}${r.id};\n`
+          const rc = compileReprInitial(r, 2);
+          delegates.push(`  function del${id}(${STR}, ${POSITION}${rc.id}) {\n`
+            + `${rc.code}`
+            + `    return ${RESULT}${rc.id};\n`
             + `  }\n`);
         }
         break;
@@ -334,12 +360,13 @@ export function compile<T>(reader: Reader<T>): (str: string, index: number) => R
         break;
     }
   }
+  const main = compileReprInitial(r, 2);
   const fncode = `(function(${READ_RESULT}, deps) {\n`
     + `  'use strict';\n`
     + `${delegates.join('')}`
-    + `  return function(${STR}, ${POSITION}0) {\n'use strict'\n`
-    + `${compileRepr(r, 2)}`
-    + `    return ${RESULT}0;\n`
+    + `  return function(${STR}, ${POSITION}${main.id}) {\n'use strict'\n`
+    + `${main.code}`
+    + `    return ${RESULT}${main.id};\n`
     + `  };\n`
     + `})\n`;
   console.info(`Compiling ${count(fncode, '\n')} lines`);
