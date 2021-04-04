@@ -196,7 +196,7 @@ const STR = 's';
 const NL = '\n';
 const READ_RESULT = 'ReadResult';
 
-function compileRepr(repr: SomeReaderRepr, stack: number[], indent: number = 0): string {
+function compileRepr(repr: SomeReaderRepr, indent: number = 0): string {
   const ws = '  '.repeat(indent);
   const ws_1 = '  '.repeat(indent + 1);
   const ws___2 = '  '.repeat(indent + 2);
@@ -214,7 +214,7 @@ function compileRepr(repr: SomeReaderRepr, stack: number[], indent: number = 0):
     case Symbols.resultMap:
       return `${blabel}`
         + `${ws}let ${POSITION}${repr.reader.id} = ${POSITION}${repr.id};${NL}`
-        + `${compileRepr(repr.reader, stack, indent + 1)}`
+        + `${compileRepr(repr.reader, indent + 1)}`
         + `${ws}let ${RESULT}${repr.id} = deps[${repr.id}](${RESULT}${repr.reader.id}, ${STR}, ${POSITION}${repr.id});${NL}`
         + flabel;
     case Symbols.delegating:
@@ -235,7 +235,7 @@ function compileRepr(repr: SomeReaderRepr, stack: number[], indent: number = 0):
         + repr.readers.map(r => (
           `${ws}if (${RESULT}${repr.id} == null) {${NL}`
         + `${ws_1}let ${POSITION}${r.id} = ${POSITION}${repr.id};${NL}`
-        + `${compileRepr(r, [], indent + 1)}`
+        + `${compileRepr(r, indent + 1)}`
         + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${r.id})) {${NL}`
         + `${ws___2}errors${repr.id} = errors${repr.id}.concat(${RESULT}${r.id}.errors);${NL}`
         + `${ws_1}} else {${NL}`
@@ -257,7 +257,7 @@ function compileRepr(repr: SomeReaderRepr, stack: number[], indent: number = 0):
           + repr.readers.map(r => (
             `${ws}if (!failure${repr.id}) {${NL}`
           + `${ws_1}let ${POSITION}${r.id} = next${repr.id};${NL}`
-          + `${compileRepr(r, [], indent + 1)}`
+          + `${compileRepr(r, indent + 1)}`
           + `${ws_1}errors${repr.id}.push(...${RESULT}${r.id}.errors);${NL}`
           + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${r.id})) {${NL}`
           + `${ws___2}failure${repr.id} = true;${NL}`
@@ -287,7 +287,7 @@ function compileRepr(repr: SomeReaderRepr, stack: number[], indent: number = 0):
         + `${ws}let next${repr.id} = ${POSITION}${repr.id};${NL}`
         + `${ws}while (true) {${NL}`
         + `${ws_1}let ${POSITION}${repr.reader.id} = next${repr.id};${NL}`
-        + `${compileRepr(repr.reader, stack, indent + 2)}`
+        + `${compileRepr(repr.reader, indent + 2)}`
         + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${repr.reader.id})) {${NL}`
         + `${ws___2}errors${repr.id} = ${RESULT}${repr.reader.id}.errors;${NL}`
         + `${ws___2}break;${NL}`
@@ -324,7 +324,7 @@ export function compile<T>(reader: Reader<T>): (str: string, index: number) => R
         } else {
           const r = reader.delegate.reader;
           delegates.push(`  function del${id}(${STR}, ${POSITION}${r.id}) {\n`
-            + `${compileRepr(r, [], 2)}`
+            + `${compileRepr(r, 2)}`
             + `    return ${RESULT}${r.id};\n`
             + `  }\n`);
         }
@@ -338,7 +338,7 @@ export function compile<T>(reader: Reader<T>): (str: string, index: number) => R
     + `  'use strict';\n`
     + `${delegates.join('')}`
     + `  return function(${STR}, ${POSITION}0) {\n'use strict'\n`
-    + `${compileRepr(r, [], 2)}`
+    + `${compileRepr(r, 2)}`
     + `    return ${RESULT}0;\n`
     + `  };\n`
     + `})\n`;
