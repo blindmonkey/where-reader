@@ -197,16 +197,24 @@ class CompilationContext {
   }
 }
 
+const NEXT = 'next';
+const STATE = 'state';
+const FAILURE = 'failure';
+const ERRORS = 'errors';
+const TOKENS = 'tokens';
 const POSITION = 'p';
 const RESULT = 'r';
 const STR = 's';
 const NL = '\n';
 const READ_RESULT = 'ReadResult';
+const WHITESPACE = '  ';
 
 function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: number = 0): {id: number, code: string} {
-  const ws = '  '.repeat(indent);
-  const ws_1 = '  '.repeat(indent + 1);
-  const ws___2 = '  '.repeat(indent + 2);
+  const ws = WHITESPACE.repeat(indent);
+  const ws_1 = WHITESPACE.repeat(indent + 1);
+  const ws___2 = WHITESPACE.repeat(indent + 2);
+  const ws_____3 = WHITESPACE.repeat(indent + 3);
+  const ws_______4 = WHITESPACE.repeat(indent + 4);
   const lbl = `${repr.label
     .replaceAll('\\', '\\\\')
     .replaceAll('\/', '\\/')
@@ -224,48 +232,50 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
       return {
         id, code:
         `${blabel}`
-        + `${ws}positions.push(positions.slice(-1)[0]);${NL}`
+        + `${ws}${POSITION}s.push(${POSITION}s.slice(-1)[0]);${NL}`
         + `${subreader.code}`
-        + `${ws}results.push(deps[${repr.id}](results.pop(), ${STR}, positions.pop()));${NL}`
+        + `${ws}${RESULT}s.push(deps[${repr.id}](${RESULT}s.pop(), ${STR}, ${POSITION}s.pop()));${NL}`
         + flabel
       };
     case Symbols.delegating:
       switch (repr.delegate.type) {
         case 'function':
           return {id, code: `${blabel}`
-            + `${ws}results.push(deps[${repr.id}](${STR}, positions.pop()));${NL}`
+            + `${ws}${RESULT}s.push(deps[${repr.id}](${STR}, ${POSITION}s.pop()));${NL}`
             + flabel
           };
         case 'reader':
           return {id, code: blabel
-            + `${ws}results.push(del${repr.id}(${STR}, positions.pop()));${NL}`
+            + `${ws}${RESULT}s.push(del${repr.id}(${STR}, ${POSITION}s.pop()));${NL}`
             + flabel
           };
       }
     case Symbols.any:
       return {id, code: blabel
         + `${ws}{${NL}`
-        + `${ws}let errors${id} = [];${NL}`
-        + `${ws}let ${RESULT}${id} = null;${NL}`
+        + `${ws_1}let ${STATE} = {${ERRORS}:[],${RESULT}:null};${NL}`
         + repr.readers.map(r => {
-          const rc = compileRepr(r, context, indent + 1);
-          return `${ws}if (${RESULT}${id} == null) {${NL}`
-        + `${ws_1}positions.push(positions.slice(-1)[0]);${NL}`
+          const rc = compileRepr(r, context, indent + 2);
+          return ''
+        + `${ws_1}if (${STATE}.${RESULT} == null) {${NL}`
+        + `${ws___2}${POSITION}s.push(${POSITION}s.slice(-1)[0]);${NL}`
         + `${rc.code}`
-        + `${ws_1}let ${RESULT}${rc.id} = results.pop();${NL}`
-        + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${rc.id})) {${NL}`
-        + `${ws___2}errors${id} = errors${id}.concat(${RESULT}${rc.id}.errors);${NL}`
-        + `${ws_1}} else {${NL}`
-        + `${ws___2}${RESULT}${id} = ${RESULT}${rc.id};${NL}`
+        + `${ws___2}{${NL}`
+        + `${ws_____3}let ${RESULT} = ${RESULT}s.pop();${NL}`
+        + `${ws_____3}if (${READ_RESULT}.isFailure(${RESULT})) {${NL}`
+        + `${ws_______4}${STATE}.${ERRORS} = ${STATE}.${ERRORS}.concat(${RESULT}.errors);${NL}`
+        + `${ws_____3}} else {${NL}`
+        + `${ws_______4}${STATE}.${RESULT} = ${RESULT};${NL}`
+        + `${ws_____3}}${NL}`
+        + `${ws___2}}${NL}`
         + `${ws_1}}${NL}`
-        + `${ws}}${NL}`
         }).join('')
-        + `${ws}positions.pop();${NL}`
-        + `${ws}if (${RESULT}${id} == null) {${NL}`
-        + `${ws_1}results.push(${READ_RESULT}.failure(...errors${id}));${NL}`
-        + `${ws}} else {${NL}`
-        + `${ws_1}results.push(${RESULT}${id});${NL}`
-        + `${ws}}${NL}`
+        + `${ws_1}${POSITION}s.pop();${NL}`
+        + `${ws_1}if (${STATE}.${RESULT} == null) {${NL}`
+        + `${ws___2}${RESULT}s.push(${READ_RESULT}.failure(...${STATE}.${ERRORS}));${NL}`
+        + `${ws_1}} else {${NL}`
+        + `${ws___2}${RESULT}s.push(${STATE}.${RESULT});${NL}`
+        + `${ws_1}}${NL}`
         + `${ws}}${NL}`
         + flabel
       };
@@ -273,39 +283,38 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
     case Symbols.seq:
       return {id, code: blabel
           + `${ws}{${NL}`
-          + `${ws}let tokens${id} = [];${NL}`
-          + `${ws}let errors${id} = [];${NL}`
-          + `${ws}let failure${id} = false;${NL}`
-          + `${ws}positions.push(positions.slice(-1)[0]);${NL}`
+          + `${ws_1}let ${STATE} = {${TOKENS}:[],${ERRORS}:[],${FAILURE}:false};${NL}`
+          + `${ws_1}${POSITION}s.push(${POSITION}s.slice(-1)[0]);${NL}`
           + repr.readers.map(r => {
-            const rc = compileRepr(r, context, indent + 1);
-            return `${ws}if (!failure${id}) {${NL}`
+            const rc = compileRepr(r, context, indent + 2);
+            return ''
+          + `${ws_1}if (!${STATE}.${FAILURE}) {${NL}`
           + `${rc.code}`
-          + `${ws_1}{${NL}`
-          + `${ws_1}let result = results.pop();${NL}`
-          + `${ws_1}errors${id}.push(...result.errors);${NL}`
-          + `${ws_1}if (${READ_RESULT}.isFailure(result)) {${NL}`
-          + `${ws___2}failure${id} = true;${NL}`
-          + `${ws_1}} else {${NL}`
-          + `${ws___2}tokens${id}.push(result);${NL}`
-          + `${ws___2}positions.push(result.next);${NL}`
+          + `${ws___2}{${NL}`
+          + `${ws_____3}let ${RESULT} = ${RESULT}s.pop();${NL}`
+          + `${ws_____3}${STATE}.${ERRORS}.push(...${RESULT}.errors);${NL}`
+          + `${ws_____3}if (${READ_RESULT}.isFailure(${RESULT})) {${NL}`
+          + `${ws_______4}${STATE}.${FAILURE} = true;${NL}`
+          + `${ws_____3}} else {${NL}`
+          + `${ws_______4}${STATE}.${TOKENS}.push(${RESULT});${NL}`
+          + `${ws_______4}${POSITION}s.push(${RESULT}.next);${NL}`
+          + `${ws_____3}}${NL}`
+          + `${ws___2}}${NL}`
           + `${ws_1}}${NL}`
-          + `${ws_1}}${NL}`
-          + `${ws}}${NL}`
           }).join('')
-          + `${ws}if (failure${id}) {${NL}`
-          + `${ws_1}positions.pop();${NL}`
-          + `${ws_1}results.push(${READ_RESULT}.failure(...errors${id}));${NL}`
-          + `${ws}} else {${NL}`
-          + `${ws_1}let next = positions.pop();${NL}`
-          + `${ws_1}let position = positions.pop();${NL}`
-          + `${ws_1}results.push(${READ_RESULT}.token(tokens${id}, {${NL}`
-          + `${ws___2}position: position,${NL}`
-          + `${ws___2}length: next - position,${NL}`
-          + `${ws___2}next: next,${NL}`
-          + `${ws___2}errors: errors${id}${NL}`
-          + `${ws_1}}));${NL}`
-          + `${ws}}${NL}`
+          + `${ws_1}if (${STATE}.${FAILURE}) {${NL}`
+          + `${ws___2}${POSITION}s.pop();${NL}`
+          + `${ws___2}${RESULT}s.push(${READ_RESULT}.failure(...${STATE}.${ERRORS}));${NL}`
+          + `${ws_1}} else {${NL}`
+          + `${ws___2}let ${NEXT} = ${POSITION}s.pop();${NL}`
+          + `${ws___2}let ${POSITION} = ${POSITION}s.pop();${NL}`
+          + `${ws___2}${RESULT}s.push(${READ_RESULT}.token(${STATE}.${TOKENS}, {${NL}`
+          + `${ws_____3}position: ${POSITION},${NL}`
+          + `${ws_____3}length: ${NEXT} - ${POSITION},${NL}`
+          + `${ws_____3}next: ${NEXT},${NL}`
+          + `${ws_____3}errors: ${STATE}.${ERRORS}${NL}`
+          + `${ws___2}}));${NL}`
+          + `${ws_1}}${NL}`
           + `${ws}}${NL}`
           + flabel
       };
@@ -314,32 +323,31 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
       const repsubreader = compileRepr(repr.reader, context, indent + 2);
       return {id, code: blabel
         + `${ws}{${NL}`
-        + `${ws}let tokens${id} = [];${NL}`
-        + `${ws}let errors${id} = [];${NL}`
-        + `${ws}positions.push(positions.slice(-1)[0]);${NL}`
-        + `${ws}while (true) {${NL}`
-        + `${ws_1}let next = positions.slice(-1)[0];${NL}`
+        + `${ws_1}let ${STATE} = {${TOKENS}:[],${ERRORS}:[]};${NL}`
+        + `${ws_1}${POSITION}s.push(${POSITION}s.slice(-1)[0]);${NL}`
+        + `${ws_1}while (true) {${NL}`
+        + `${ws___2}let ${NEXT} = ${POSITION}s.slice(-1)[0];${NL}`
         + `${repsubreader.code}`
-        + `${ws_1}let ${RESULT}${repsubreader.id} = results.pop();${NL}`
-        + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${repsubreader.id})) {${NL}`
-        + `${ws___2}errors${id} = ${RESULT}${repsubreader.id}.errors;${NL}`
-        + `${ws___2}positions.push(next);${NL}`
-        + `${ws___2}break;${NL}`
-        + `${ws_1}} else {${NL}`
-        + `${ws___2}tokens${id}.push(${RESULT}${repsubreader.id});${NL}`
-        + `${ws___2}positions.push(${RESULT}${repsubreader.id}.next);${NL}`
+        + `${ws___2}let ${RESULT}${repsubreader.id} = ${RESULT}s.pop();${NL}`
+        + `${ws___2}if (${READ_RESULT}.isFailure(${RESULT}${repsubreader.id})) {${NL}`
+        + `${ws_____3}${STATE}.${ERRORS} = ${RESULT}${repsubreader.id}.errors;${NL}`
+        + `${ws_____3}${POSITION}s.push(${NEXT});${NL}`
+        + `${ws_____3}break;${NL}`
+        + `${ws___2}} else {${NL}`
+        + `${ws_____3}${STATE}.${TOKENS}.push(${RESULT}${repsubreader.id});${NL}`
+        + `${ws_____3}${POSITION}s.push(${RESULT}${repsubreader.id}.next);${NL}`
+        + `${ws___2}}${NL}`
         + `${ws_1}}${NL}`
-        + `${ws}}${NL}`
-        + `${ws}{${NL}`
-        + `${ws_1}let next = positions.pop();${NL}`
-        + `${ws_1}let position = positions.pop();${NL}`
-        + `${ws_1}results.push(${READ_RESULT}.token(tokens${id}, {${NL}`
-        + `${ws___2}position: position,${NL}`
-        + `${ws___2}length: next - position,${NL}`
-        + `${ws___2}next: next,${NL}`
-        + `${ws___2}errors: errors${id}${NL}`
-        + `${ws_1}}));${NL}`
-        + `${ws}}${NL}`
+        + `${ws_1}{${NL}`
+        + `${ws___2}let ${NEXT} = ${POSITION}s.pop();${NL}`
+        + `${ws___2}let ${POSITION} = ${POSITION}s.pop();${NL}`
+        + `${ws___2}${RESULT}s.push(${READ_RESULT}.token(${STATE}.${TOKENS}, {${NL}`
+        + `${ws_____3}position: ${POSITION},${NL}`
+        + `${ws_____3}length: ${NEXT} - ${POSITION},${NL}`
+        + `${ws_____3}next: ${NEXT},${NL}`
+        + `${ws_____3}errors: ${STATE}.${ERRORS}${NL}`
+        + `${ws___2}}));${NL}`
+        + `${ws_1}}${NL}`
         + `${ws}}${NL}`
         + flabel
       };
@@ -353,10 +361,10 @@ function compileReprInitial(repr: SomeReaderRepr, indent: number): {id: number, 
   const compiled = compileRepr(repr, context, indent);
   return {
     id,
-    code: `${ws}let positions = [${POSITION}${id}];${NL}`
-    + `${ws}let results = [];${NL}`
+    code: `${ws}let ${POSITION}s = [${POSITION}${id}];${NL}`
+    + `${ws}let ${RESULT}s = [];${NL}`
     + compiled.code
-    + `${ws}return results.pop();${NL}`
+    + `${ws}return ${RESULT}s.pop();${NL}`
   };
 }
 
