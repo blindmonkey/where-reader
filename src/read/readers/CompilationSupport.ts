@@ -327,8 +327,14 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
 }
 
 function compileReprInitial(repr: SomeReaderRepr, indent: number): {id: number, code: string} {
+  const ws = '  '.repeat(indent);
   const context = new CompilationContext();
-  return compileRepr(repr, context, indent);
+  const compiled = compileRepr(repr, context, indent);
+  return {
+    id: compiled.id,
+    code: compiled.code
+      + `${ws}return ${RESULT}${compiled.id};${NL}`
+  };
 }
 
 export function compile<T>(reader: Reader<T>): (str: string, index: number) => ReadResult<T> {
@@ -351,7 +357,6 @@ export function compile<T>(reader: Reader<T>): (str: string, index: number) => R
           const rc = compileReprInitial(r, 2);
           delegates.push(`  function del${id}(${STR}, ${POSITION}${rc.id}) {\n`
             + `${rc.code}`
-            + `    return ${RESULT}${rc.id};\n`
             + `  }\n`);
         }
         break;
@@ -366,7 +371,6 @@ export function compile<T>(reader: Reader<T>): (str: string, index: number) => R
     + `${delegates.join('')}`
     + `  return function(${STR}, ${POSITION}${main.id}) {\n'use strict'\n`
     + `${main.code}`
-    + `    return ${RESULT}${main.id};\n`
     + `  };\n`
     + `})\n`;
   console.info(`Compiling ${count(fncode, '\n')} lines`);
