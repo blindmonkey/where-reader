@@ -253,7 +253,8 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
     case Symbols.any:
       return {id, code: blabel
         + `${ws}{${NL}`
-        + `${ws_1}let ${STATE} = {${ERRORS}:[],${RESULT}:null};${NL}`
+        + `${ws_1}${STATE}s.push(${STATE});${NL}`
+        + `${ws_1}${STATE} = {${ERRORS}:[],${RESULT}:null};${NL}`
         + repr.readers.map(r => {
           const rc = compileRepr(r, context, indent + 2);
           return ''
@@ -276,6 +277,7 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
         + `${ws_1}} else {${NL}`
         + `${ws___2}${RESULT}s.push(${STATE}.${RESULT});${NL}`
         + `${ws_1}}${NL}`
+        + `${ws_1}${STATE} = ${STATE}s.pop();${NL}`
         + `${ws}}${NL}`
         + flabel
       };
@@ -283,7 +285,8 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
     case Symbols.seq:
       return {id, code: blabel
           + `${ws}{${NL}`
-          + `${ws_1}let ${STATE} = {${TOKENS}:[],${ERRORS}:[],${FAILURE}:false};${NL}`
+          + `${ws_1}${STATE}s.push(${STATE});${NL}`
+          + `${ws_1}${STATE} = {${TOKENS}:[],${ERRORS}:[],${FAILURE}:false};${NL}`
           + `${ws_1}${POSITION}s.push(${POSITION}s.slice(-1)[0]);${NL}`
           + repr.readers.map(r => {
             const rc = compileRepr(r, context, indent + 2);
@@ -315,6 +318,7 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
           + `${ws_____3}errors: ${STATE}.${ERRORS}${NL}`
           + `${ws___2}}));${NL}`
           + `${ws_1}}${NL}`
+          + `${ws_1}${STATE} = ${STATE}s.pop();${NL}`
           + `${ws}}${NL}`
           + flabel
       };
@@ -323,7 +327,8 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
       const repsubreader = compileRepr(repr.reader, context, indent + 2);
       return {id, code: blabel
         + `${ws}{${NL}`
-        + `${ws_1}let ${STATE} = {${TOKENS}:[],${ERRORS}:[]};${NL}`
+        + `${ws_1}${STATE}s.push(${STATE});${NL}`
+        + `${ws_1}${STATE} = {${TOKENS}:[],${ERRORS}:[]};${NL}`
         + `${ws_1}${POSITION}s.push(${POSITION}s.slice(-1)[0]);${NL}`
         + `${ws_1}while (true) {${NL}`
         + `${ws___2}let ${NEXT} = ${POSITION}s.slice(-1)[0];${NL}`
@@ -348,6 +353,7 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
         + `${ws_____3}errors: ${STATE}.${ERRORS}${NL}`
         + `${ws___2}}));${NL}`
         + `${ws_1}}${NL}`
+        + `${ws_1}${STATE} = ${STATE}s.pop();${NL}`
         + `${ws}}${NL}`
         + flabel
       };
@@ -363,6 +369,8 @@ function compileReprInitial(repr: SomeReaderRepr, indent: number): {id: number, 
     id,
     code: `${ws}let ${POSITION}s = [${POSITION}${id}];${NL}`
     + `${ws}let ${RESULT}s = [];${NL}`
+    + `${ws}let ${STATE}s = [];${NL}`
+    + `${ws}var ${STATE};${NL}`
     + compiled.code
     + `${ws}return ${RESULT}s.pop();${NL}`
   };
