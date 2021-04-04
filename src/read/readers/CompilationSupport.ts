@@ -197,6 +197,8 @@ class CompilationContext {
   }
 }
 
+const BEGIN_SCOPE = '{';
+const END_SCOPE = '}';
 const NEXT = 'next';
 const STATE = 'state';
 const FAILURE = 'failure';
@@ -252,7 +254,7 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
       }
     case Symbols.any:
       return {id, code: blabel
-        + `${ws}{${NL}`
+        + `${ws}${BEGIN_SCOPE}${NL}`
         + `${ws_1}${STATE}s.push(${STATE});${NL}`
         + `${ws_1}${STATE} = {${ERRORS}:[],${RESULT}:null};${NL}`
         + repr.readers.map(r => {
@@ -278,13 +280,13 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
         + `${ws___2}${RESULT}s.push(${STATE}.${RESULT});${NL}`
         + `${ws_1}}${NL}`
         + `${ws_1}${STATE} = ${STATE}s.pop();${NL}`
-        + `${ws}}${NL}`
+        + `${ws}${END_SCOPE}${NL}`
         + flabel
       };
 
     case Symbols.seq:
       return {id, code: blabel
-          + `${ws}{${NL}`
+          + `${ws}${BEGIN_SCOPE}${NL}`
           + `${ws_1}${STATE}s.push(${STATE});${NL}`
           + `${ws_1}${STATE} = {${TOKENS}:[],${ERRORS}:[],${FAILURE}:false};${NL}`
           + `${ws_1}${POSITION}s.push(${POSITION}s.slice(-1)[0]);${NL}`
@@ -319,14 +321,14 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
           + `${ws___2}}));${NL}`
           + `${ws_1}}${NL}`
           + `${ws_1}${STATE} = ${STATE}s.pop();${NL}`
-          + `${ws}}${NL}`
+          + `${ws}${END_SCOPE}${NL}`
           + flabel
       };
 
     case Symbols.repeat:
       const repsubreader = compileRepr(repr.reader, context, indent + 2);
       return {id, code: blabel
-        + `${ws}{${NL}`
+        + `${ws}${BEGIN_SCOPE}${NL}`
         + `${ws_1}${STATE}s.push(${STATE});${NL}`
         + `${ws_1}${STATE} = {${TOKENS}:[],${ERRORS}:[]};${NL}`
         + `${ws_1}${POSITION}s.push(${POSITION}s.slice(-1)[0]);${NL}`
@@ -354,7 +356,7 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
         + `${ws___2}}));${NL}`
         + `${ws_1}}${NL}`
         + `${ws_1}${STATE} = ${STATE}s.pop();${NL}`
-        + `${ws}}${NL}`
+        + `${ws}${END_SCOPE}${NL}`
         + flabel
       };
   }
