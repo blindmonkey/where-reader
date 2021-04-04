@@ -2,6 +2,7 @@ import { ReadResult } from "../src/read/ReadResult";
 import { Reader } from "../src/read/Reader";
 import { ReadFailure } from "../src/read/ReadResult";
 import { compile } from "../src/read/readers/CompilationSupport";
+import { expect } from "chai";
 
 function deduplicate(arr: string[]): string[] {
   const sentinel = {};
@@ -81,6 +82,7 @@ export function read<T>(reader: Reader<T>, string: string, position: number = 0,
       })
     };
   }
+  let readResult = reader.read(string, position);
   let r;
   if (compiled in reader) {
     r = (reader as any)[compiled];
@@ -88,6 +90,7 @@ export function read<T>(reader: Reader<T>, string: string, position: number = 0,
     r = (reader as any)[compiled] = compile(reader);
   }
   const result = r(string, position);
+  expect(result).to.deep.equal(readResult);
   if (ReadResult.isFailure(result)) {
     if (withContext) {
       return processFailureWithContext(result);

@@ -86,6 +86,133 @@ describe('JSON', function() {
     expect(res.value).to.be.deep.equal(arr);
   });
 
+  it('should parse null literal', function() {
+    expect(read(value, 'null'))
+      .to.be.deep.equal(ReadResult.token(Json.nul, {
+        position: 0,
+        length: 4,
+        next: 4,
+        errors: [ReadResult.error('JSON value', 0)]
+      }));
+  });
+
+  it('should handle escaped strings', function() {
+    expect(read(value, '"\\\\\\"\\/\\n\\r\\t\\b\\f"'))
+      .to.be.deep.equal(ReadResult.token(Json.string('\\"/\n\r\t\b\f'), {
+        position: 1,
+        length: 16,
+        next: 18,
+        errors: [
+          ReadResult.error("'\\'", 17, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('string literal', 0),
+          ]),
+          ReadResult.error("valid unescaped char", 17, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('string literal', 0),
+          ])
+        ]
+      }))
+  })
+
+  it('should parse number with exponent', function() {
+    expect(read(value, '15e16'))
+      .to.be.deep.equal(ReadResult.token(Json.number('15e16'), {
+        position: 0,
+        length: 5,
+        next: 5,
+        errors: [
+          ReadResult.error("'-'", 0, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0),
+            ReadResult.context('integer', 0)
+          ]),
+          ReadResult.error("'0'", 2, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0),
+            ReadResult.context('integer', 0),
+            ReadResult.context('digits', 1)
+          ]),
+          ReadResult.error("/[1-9]/", 2, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0),
+            ReadResult.context('integer', 0),
+            ReadResult.context('digits', 1)
+          ]),
+          ReadResult.error("fractional component", 2, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0)
+          ]),
+          ReadResult.error("'+'", 3, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0),
+            ReadResult.context('exponent', 2)
+          ]),
+          ReadResult.error("'-'", 3, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0),
+            ReadResult.context('exponent', 2)
+          ]),
+          ReadResult.error("'0'", 5, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0),
+            ReadResult.context('exponent', 2),
+            ReadResult.context('digits', 3)
+          ]),
+          ReadResult.error("/[1-9]/", 5, [
+            ReadResult.context('JSON value', 0),
+            ReadResult.context('number literal', 0),
+            ReadResult.context('exponent', 2),
+            ReadResult.context('digits', 3)
+          ])
+        ]
+      }));
+  })
+
+  it('should parse simple object', function() {
+    expect(read(value, '{"a": 2}')).to.be.deep.equal(ReadResult.token(Json.object({
+      a: Json.number('2')
+    }), {
+      position: 1,
+      length: 6,
+      next: 8,
+      errors: [
+        ReadResult.error("'\\'", 3, [
+          ReadResult.context('JSON value', 0),
+          ReadResult.context('JSON object', 0),
+          ReadResult.context('string literal', 1)
+        ]),
+        ReadResult.error('valid unescaped char', 3, [
+          ReadResult.context('JSON value', 0),
+          ReadResult.context('JSON object', 0),
+          ReadResult.context('string literal', 1)
+        ]),
+        ReadResult.error('integer', 6, [
+          ReadResult.context('JSON value', 0),
+          ReadResult.context('JSON object', 0),
+          ReadResult.context('JSON value', 6),
+          ReadResult.context('number literal', 6)
+        ]),
+        ReadResult.error('fractional component', 7, [
+          ReadResult.context('JSON value', 0),
+          ReadResult.context('JSON object', 0),
+          ReadResult.context('JSON value', 6),
+          ReadResult.context('number literal', 6)
+        ]),
+        ReadResult.error('exponent', 7, [
+          ReadResult.context('JSON value', 0),
+          ReadResult.context('JSON object', 0),
+          ReadResult.context('JSON value', 6),
+          ReadResult.context('number literal', 6)
+        ]),
+        ReadResult.error("','", 7, [
+          ReadResult.context('JSON value', 0),
+          ReadResult.context('JSON object', 0)
+        ])
+      ]
+    }));
+  });
+
   itShouldFail('array_1_true_without_comma', '[1 true]', {
     expected: 'string literal | JSON object | boolean literal | "null" | number literal',
     position: 0,
