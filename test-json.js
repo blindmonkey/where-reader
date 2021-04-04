@@ -198,6 +198,9 @@ async function main() {
       failures++;
       console.log(`fail -- ${filename}`);
       console.info(result);
+      if (ReadResult.isFailure(parsed)) {
+        reportFailure(filename, result, parsed);
+      }
     }
   }
   console.error(`Failed ${failures} tests, passed ${undef[0]}/${undef[1]} undefined cases`);

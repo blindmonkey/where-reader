@@ -224,33 +224,35 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
       return {
         id, code:
         `${blabel}`
-        + `${ws}let ${POSITION}${subreader.id} = ${POSITION}${id};${NL}`
+        + `${ws}positions.push(positions.slice(-1)[0]);${NL}`
         + `${subreader.code}`
-        + `${ws}let ${RESULT}${id} = deps[${repr.id}](${RESULT}${subreader.id}, ${STR}, ${POSITION}${id});${NL}`
+        + `${ws}results.push(deps[${repr.id}](results.pop(), ${STR}, positions.pop()));${NL}`
         + flabel
       };
     case Symbols.delegating:
       switch (repr.delegate.type) {
         case 'function':
           return {id, code: `${blabel}`
-            + `${ws}let ${RESULT}${id} = deps[${repr.id}](${STR}, ${POSITION}${id});${NL}`
+            + `${ws}results.push(deps[${repr.id}](${STR}, positions.pop()));${NL}`
             + flabel
           };
         case 'reader':
           return {id, code: blabel
-            + `${ws}let ${RESULT}${id} = del${repr.id}(${STR}, ${POSITION}${id});${NL}`
+            + `${ws}results.push(del${repr.id}(${STR}, positions.pop()));${NL}`
             + flabel
           };
       }
     case Symbols.any:
       return {id, code: blabel
+        + `${ws}{${NL}`
         + `${ws}let errors${id} = [];${NL}`
         + `${ws}let ${RESULT}${id} = null;${NL}`
         + repr.readers.map(r => {
           const rc = compileRepr(r, context, indent + 1);
           return `${ws}if (${RESULT}${id} == null) {${NL}`
-        + `${ws_1}let ${POSITION}${rc.id} = ${POSITION}${id};${NL}`
+        + `${ws_1}positions.push(positions.slice(-1)[0]);${NL}`
         + `${rc.code}`
+        + `${ws_1}let ${RESULT}${rc.id} = results.pop();${NL}`
         + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${rc.id})) {${NL}`
         + `${ws___2}errors${id} = errors${id}.concat(${RESULT}${rc.id}.errors);${NL}`
         + `${ws_1}} else {${NL}`
@@ -258,42 +260,52 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
         + `${ws_1}}${NL}`
         + `${ws}}${NL}`
         }).join('')
+        + `${ws}positions.pop();${NL}`
         + `${ws}if (${RESULT}${id} == null) {${NL}`
-        + `${ws_1}${RESULT}${id} = ${READ_RESULT}.failure(...errors${id});${NL}`
+        + `${ws_1}results.push(${READ_RESULT}.failure(...errors${id}));${NL}`
+        + `${ws}} else {${NL}`
+        + `${ws_1}results.push(${RESULT}${id});${NL}`
+        + `${ws}}${NL}`
         + `${ws}}${NL}`
         + flabel
       };
 
     case Symbols.seq:
       return {id, code: blabel
+          + `${ws}{${NL}`
           + `${ws}let tokens${id} = [];${NL}`
           + `${ws}let errors${id} = [];${NL}`
           + `${ws}let failure${id} = false;${NL}`
-          + `${ws}let next${id} = ${POSITION}${id};${NL}`
+          + `${ws}positions.push(positions.slice(-1)[0]);${NL}`
           + repr.readers.map(r => {
             const rc = compileRepr(r, context, indent + 1);
             return `${ws}if (!failure${id}) {${NL}`
-          + `${ws_1}let ${POSITION}${rc.id} = next${id};${NL}`
           + `${rc.code}`
-          + `${ws_1}errors${id}.push(...${RESULT}${rc.id}.errors);${NL}`
-          + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${rc.id})) {${NL}`
+          + `${ws_1}{${NL}`
+          + `${ws_1}let result = results.pop();${NL}`
+          + `${ws_1}errors${id}.push(...result.errors);${NL}`
+          + `${ws_1}if (${READ_RESULT}.isFailure(result)) {${NL}`
           + `${ws___2}failure${id} = true;${NL}`
           + `${ws_1}} else {${NL}`
-          + `${ws___2}tokens${id}.push(${RESULT}${rc.id});${NL}`
-          + `${ws___2}next${id} = ${RESULT}${rc.id}.next;${NL}`
+          + `${ws___2}tokens${id}.push(result);${NL}`
+          + `${ws___2}positions.push(result.next);${NL}`
+          + `${ws_1}}${NL}`
           + `${ws_1}}${NL}`
           + `${ws}}${NL}`
           }).join('')
-          + `${ws}let ${RESULT}${id};${NL}`
           + `${ws}if (failure${id}) {${NL}`
-          + `${ws_1}${RESULT}${id} = ${READ_RESULT}.failure(...errors${id});${NL}`
+          + `${ws_1}positions.pop();${NL}`
+          + `${ws_1}results.push(${READ_RESULT}.failure(...errors${id}));${NL}`
           + `${ws}} else {${NL}`
-          + `${ws_1}${RESULT}${id} = ${READ_RESULT}.token(tokens${id}, {${NL}`
-          + `${ws___2}position: ${POSITION}${id},${NL}`
-          + `${ws___2}length: next${id} - ${POSITION}${id},${NL}`
-          + `${ws___2}next: next${id},${NL}`
+          + `${ws_1}let next = positions.pop();${NL}`
+          + `${ws_1}let position = positions.pop();${NL}`
+          + `${ws_1}results.push(${READ_RESULT}.token(tokens${id}, {${NL}`
+          + `${ws___2}position: position,${NL}`
+          + `${ws___2}length: next - position,${NL}`
+          + `${ws___2}next: next,${NL}`
           + `${ws___2}errors: errors${id}${NL}`
-          + `${ws_1}});${NL}`
+          + `${ws_1}}));${NL}`
+          + `${ws}}${NL}`
           + `${ws}}${NL}`
           + flabel
       };
@@ -301,26 +313,34 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
     case Symbols.repeat:
       const repsubreader = compileRepr(repr.reader, context, indent + 2);
       return {id, code: blabel
+        + `${ws}{${NL}`
         + `${ws}let tokens${id} = [];${NL}`
         + `${ws}let errors${id} = [];${NL}`
-        + `${ws}let next${id} = ${POSITION}${id};${NL}`
+        + `${ws}positions.push(positions.slice(-1)[0]);${NL}`
         + `${ws}while (true) {${NL}`
-        + `${ws_1}let ${POSITION}${repsubreader.id} = next${id};${NL}`
+        + `${ws_1}let next = positions.slice(-1)[0];${NL}`
         + `${repsubreader.code}`
+        + `${ws_1}let ${RESULT}${repsubreader.id} = results.pop();${NL}`
         + `${ws_1}if (${READ_RESULT}.isFailure(${RESULT}${repsubreader.id})) {${NL}`
         + `${ws___2}errors${id} = ${RESULT}${repsubreader.id}.errors;${NL}`
+        + `${ws___2}positions.push(next);${NL}`
         + `${ws___2}break;${NL}`
         + `${ws_1}} else {${NL}`
         + `${ws___2}tokens${id}.push(${RESULT}${repsubreader.id});${NL}`
-        + `${ws___2}next${id} = ${RESULT}${repsubreader.id}.next;${NL}`
+        + `${ws___2}positions.push(${RESULT}${repsubreader.id}.next);${NL}`
         + `${ws_1}}${NL}`
         + `${ws}}${NL}`
-        + `${ws}let ${RESULT}${id} = ${READ_RESULT}.token(tokens${id}, {${NL}`
-        + `${ws_1}position: ${POSITION}${id},${NL}`
-        + `${ws_1}length: next${id} - ${POSITION}${id},${NL}`
-        + `${ws_1}next: next${id},${NL}`
-        + `${ws_1}errors: errors${id}${NL}`
-        + `${ws}});${NL}`
+        + `${ws}{${NL}`
+        + `${ws_1}let next = positions.pop();${NL}`
+        + `${ws_1}let position = positions.pop();${NL}`
+        + `${ws_1}results.push(${READ_RESULT}.token(tokens${id}, {${NL}`
+        + `${ws___2}position: position,${NL}`
+        + `${ws___2}length: next - position,${NL}`
+        + `${ws___2}next: next,${NL}`
+        + `${ws___2}errors: errors${id}${NL}`
+        + `${ws_1}}));${NL}`
+        + `${ws}}${NL}`
+        + `${ws}}${NL}`
         + flabel
       };
   }
@@ -329,11 +349,14 @@ function compileRepr(repr: SomeReaderRepr, context: CompilationContext, indent: 
 function compileReprInitial(repr: SomeReaderRepr, indent: number): {id: number, code: string} {
   const ws = '  '.repeat(indent);
   const context = new CompilationContext();
+  const id = context.nextId;
   const compiled = compileRepr(repr, context, indent);
   return {
-    id: compiled.id,
-    code: compiled.code
-      + `${ws}return ${RESULT}${compiled.id};${NL}`
+    id,
+    code: `${ws}let positions = [${POSITION}${id}];${NL}`
+    + `${ws}let results = [];${NL}`
+    + compiled.code
+    + `${ws}return results.pop();${NL}`
   };
 }
 
